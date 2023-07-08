@@ -1,0 +1,12 @@
+name: local.psalm-gpt-taint.com
+document_root: public
+network:
+  ip: 127.0.0.1
+  host: local.psalm-gpt-taint.com
+config:
+  php: 8.2
+  apache: true
+  mysql: true
+  mailhog: true
+exec:
+  - ./init.sh
