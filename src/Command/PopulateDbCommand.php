@@ -24,9 +24,9 @@ class PopulateDbCommand extends Command
 
     public function __construct(string $projectDir, EntityManagerInterface $entityManager)
     {
+        parent::__construct();
         $this->projectDir = $projectDir;
         $this->entityManager = $entityManager;
-        parent::__construct();
     }
 
     protected function configure(): void
@@ -124,7 +124,7 @@ class PopulateDbCommand extends Command
 
         $errors = [];
         foreach ($matches as $match) {
-            $errors = [
+            $errors[] = [
                 'errorType' => $match[1],
                 'errorId' => TaintTypes::getIdByName($match[1]),
                 'file' => $match[2] . ':' . $match[3],
@@ -133,7 +133,7 @@ class PopulateDbCommand extends Command
             ];
         }
 
-        return array($errors);
+        return $errors;
     }
 
 }
