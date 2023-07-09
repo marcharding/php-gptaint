@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Issue{% endblock %}
+
+{% block body %}
+    <h1>Issue</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ issue.id }}</td>
+            </tr>
+            <tr>
+                <th>TaintId</th>
+                <td>{{ issue.taintId }}</td>
+            </tr>
+            <tr>
+                <th>ExtractedCodePath</th>
+                <td>{{ issue.extractedCodePath }}</td>
+            </tr>
+            <tr>
+                <th>Type</th>
+                <td>{{ issue.type }}</td>
+            </tr>
+            <tr>
+                <th>PsalmResult</th>
+                <td>{{ issue.psalmResult }}</td>
+            </tr>
+            <tr>
+                <th>Description</th>
+                <td>{{ issue.description }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_issue_index') }}">back to list</a>
+
+    <a href="{{ path('app_issue_edit', {'id': issue.id}) }}">edit</a>
+
+    {{ include('issue/_delete_form.html.twig') }}
+{% endblock %}
