@@ -22,18 +22,9 @@ use PhpParser\PrettyPrinter;
 
 class CodeExtractor
 {
-    private $filePath;
-    private $targetLineNumber;
-
-    public function __construct($filePath, $targetLineNumber)
+    public function extractCodeLeadingToLine($filePath, $targetLineNumber)
     {
-        $this->filePath = $filePath;
-        $this->targetLineNumber = $targetLineNumber;
-    }
-
-    public function extractCodeLeadingToLine()
-    {
-        $code = file_get_contents($this->filePath);
+        $code = file_get_contents($filePath);
 
         $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
         $ast = $parser->parse($code);
@@ -41,7 +32,7 @@ class CodeExtractor
         $traverser = new NodeTraverser();
         $traverser->addVisitor(new NodeConnectingVisitor);
 
-        $visitor = new NodeLineNumberMatchingVisitor($this->targetLineNumber);
+        $visitor = new NodeLineNumberMatchingVisitor($targetLineNumber);
         $traverser->addVisitor($visitor);
         $traverser->traverse($ast);
         $matchingNode = $visitor->getNode();
@@ -141,7 +132,7 @@ class CodeExtractor
         $ast = $traverser->traverse($ast);
 
         // Remove everything after the given line
-        $traverser->addVisitor(new RemoveCodeAfterLineNumberNodeVisitor($this->targetLineNumber));
+        $traverser->addVisitor(new RemoveCodeAfterLineNumberNodeVisitor($targetLineNumber));
         $ast = $traverser->traverse($ast);
         // $printer = new Standard(['preserveComments' => true]);
         $prettyPrinter = new PrettyPrinter\Standard(['preserveComments' => true]);
