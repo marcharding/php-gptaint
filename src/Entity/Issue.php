@@ -48,6 +48,12 @@ class Issue
     #[ORM\Column(length: 255)]
     private ?string $file = null;
 
+    #[ORM\Column]
+    private ?int $estimatedTokens = null;
+
+    #[ORM\Column]
+    private ?int $estimatedTokensUnoptimized = null;
+
     public function __construct()
     {
         $this->gptResults = new ArrayCollection();
@@ -168,6 +174,30 @@ class Issue
     public function setFile(string $file): static
     {
         $this->file = $file;
+
+        return $this;
+    }
+
+    public function getEstimatedTokens(): ?int
+    {
+        return $this->estimatedTokens;
+    }
+
+    public function setEstimatedTokens(int $estimatedTokens): static
+    {
+        $this->estimatedTokens = $estimatedTokens;
+
+        return $this;
+    }
+
+    public function getEstimatedTokensUnoptimized(): ?int
+    {
+        return $this->estimatedTokensUnoptimized;
+    }
+
+    public function setEstimatedTokensUnoptimized(int $estimatedTokensUnoptimized): static
+    {
+        $this->estimatedTokensUnoptimized = $estimatedTokensUnoptimized;
 
         return $this;
     }

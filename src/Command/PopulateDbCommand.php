@@ -4,8 +4,12 @@ namespace App\Command;
 
 use App\Entity\Code;
 use App\Entity\Issue;
+use App\Service\CodeExtractor\CodeExtractor;
+use App\Service\SarifToFlatArrayConverter;
 use App\Service\TaintTypes;
 use Doctrine\ORM\EntityManagerInterface;
+use Gioni06\Gpt3Tokenizer\Gpt3Tokenizer;
+use Gioni06\Gpt3Tokenizer\Gpt3TokenizerConfig;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -21,12 +25,14 @@ class PopulateDbCommand extends Command
 {
     private EntityManagerInterface $entityManager;
     private string $projectDir;
+    private CodeExtractor $codeExtractor;
 
-    public function __construct(string $projectDir, EntityManagerInterface $entityManager)
+    public function __construct(string $projectDir, EntityManagerInterface $entityManager, CodeExtractor $codeExtractor)
     {
         parent::__construct();
         $this->projectDir = $projectDir;
         $this->entityManager = $entityManager;
+        $this->codeExtractor = $codeExtractor;
     }
 
     protected function configure(): void
@@ -47,12 +53,19 @@ class PopulateDbCommand extends Command
 
         $iterator = new \DirectoryIterator($directory);
 
+        $tokenizer = new Gpt3Tokenizer(new Gpt3TokenizerConfig());
+
         foreach ($iterator as $fileInfo) {
             if ($fileInfo->isDir() && !$fileInfo->isDot()) {
                 $folderName = $fileInfo->getFilename();
 
                 // Extract pluginname from readme.txt
                 $name = $this->extractPluginnameFromReadme($fileInfo);
+
+                $s = new SarifToFlatArrayConverter();
+                $psalmResultFile = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/sarif' . DIRECTORY_SEPARATOR . $folderName . '.sarif';
+                $psalmResultFile = json_decode(file_get_contents($psalmResultFile), true);
+                $sarifResults = $s->getArray($psalmResultFile);
 
                 // Add or update code entity
                 $codeEntity = $this->entityManager->getRepository(Code::class)->findOneBy(['directory' => $folderName]);
@@ -67,18 +80,34 @@ class PopulateDbCommand extends Command
 
                 $issues = $this->getPsalmResultsArray($folderName);
                 foreach ($issues as $issue) {
-                    // TODO: Check if issue exists
-                    $issueEntity = new Issue();
+                    $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['taintId' => $issue['errorId'], 'file' => $issue['file'], 'code' => $codeEntity]);
+                    if (!$issueEntity) {
+                        $issueEntity = new Issue();
+                    }
                     $issueEntity->setCode($codeEntity);
-
                     $issueEntity->setTaintId($issue['errorId']);
                     $issueEntity->setType($issue['errorType']);
                     $issueEntity->setFile($issue['file']);
                     $issueEntity->setDescription($issue['description']);
                     $issueEntity->setPsalmResult($issue['content']);
 
-                    // TODO: Integrate codeextractor
-                    $issueEntity->setExtractedCodePath('// TODO');
+                    // store optimized codepath and unoptimized for token comparison / effectiveness
+                    $extractedCodePath = "";
+                    $unoptimizedCodePath = "";
+                    if(isset($sarifResults[$issue['errorId'].'_'.$issue['file']])){
+                        $entry = $sarifResults[$issue['errorId'].'_'.$issue['file']];
+                        foreach ($entry["locations"] as $item) {
+                            $pluginRoot = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
+                            $extractedCodePath .= "// FILE: {$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
+                            $extractedCodePath .= $this->codeExtractor->extractCodeLeadingToLine($pluginRoot.$item['file'],  $item["region"]['startLine']);
+                            $extractedCodePath .= PHP_EOL . PHP_EOL . PHP_EOL;
+                            $unoptimizedCodePath .= file_get_contents($pluginRoot.$item['file']);
+                        }
+                    }
+
+                    $issueEntity->setExtractedCodePath($extractedCodePath);
+                    $issueEntity->setEstimatedTokens($tokenizer->count($extractedCodePath));
+                    $issueEntity->setEstimatedTokensUnoptimized($tokenizer->count($unoptimizedCodePath));
 
                     $this->entityManager->persist($issueEntity);
                 }
