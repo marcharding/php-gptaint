@@ -178,6 +178,14 @@ class CodeExtractor
 
                     // $calledMethodName = $expr->name->name;
                     $classMethod = $visitor->getClassMethod();
+
+                    // only add a method once, hopefully fixes endless recursion in
+                    // amazon-auto-links/include/library/apf/factory/admin_page/_model/AdminPageFramework_ExportOptions.php:55:20
+                    if(is_null($classMethod) || isset($calledMethods[spl_object_id($classMethod)])){
+                        continue;
+                    }
+                    $calledMethods[spl_object_id($classMethod)] = $classMethod;
+
                     $calledMethods[] = $classMethod;
 
                     // Recursively traverse the AST of the newly found method
