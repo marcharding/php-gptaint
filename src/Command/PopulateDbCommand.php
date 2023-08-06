@@ -129,11 +129,21 @@ class PopulateDbCommand extends Command
      * @param $fileInfo
      * @return string
      */
-    public function extractPluginnameFromReadme($fileInfo): string
+    public function extractPluginnameFromReadme(\SplFileInfo $fileInfo): string
     {
         $readmeFile = $fileInfo->getPathname() . '/readme.txt';
+
+        if(!is_file($fileInfo->getPathname() . '/readme.txt')){
+            return $fileInfo->getBasename();
+        }
+
         $readmeContent = file_get_contents($readmeFile);
         preg_match('/===\s*([^=]+)\s*===/', $readmeContent, $matches);
+
+        if(empty($matches)){
+            return $fileInfo->getBasename();
+        }
+
         $name = trim($matches[1]);
         return $name;
     }
