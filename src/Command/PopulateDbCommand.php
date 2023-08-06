@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Yethee\Tiktoken\EncoderProvider;
 
 #[AsCommand(
     name: 'app:populate-db',
@@ -53,7 +54,8 @@ class PopulateDbCommand extends Command
 
         $iterator = new \DirectoryIterator($directory);
 
-        $tokenizer = new Gpt3Tokenizer(new Gpt3TokenizerConfig());
+        $provider = new EncoderProvider();
+        $encoder = $provider->get('cl100k_base');
 
         foreach ($iterator as $fileInfo) {
             if ($fileInfo->isDir() && !$fileInfo->isDot()) {
@@ -97,7 +99,7 @@ class PopulateDbCommand extends Command
                     if(isset($sarifResults[$issue['errorId'].'_'.$issue['file']])){
                         $entry = $sarifResults[$issue['errorId'].'_'.$issue['file']];
                         foreach ($entry["locations"] as $item) {
-                            $pluginRoot = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
+                            $pluginRoot = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins_tainted' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
                             $extractedCodePath .= "// FILE: {$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
                             $extractedCodePath .= $this->codeExtractor->extractCodeLeadingToLine($pluginRoot.$item['file'],  $item["region"]['startLine']);
                             $extractedCodePath .= PHP_EOL . PHP_EOL . PHP_EOL;
@@ -106,10 +108,11 @@ class PopulateDbCommand extends Command
                     }
 
                     $issueEntity->setExtractedCodePath($extractedCodePath);
-                    $issueEntity->setEstimatedTokens($tokenizer->count($extractedCodePath));
-                    $issueEntity->setEstimatedTokensUnoptimized($tokenizer->count($unoptimizedCodePath));
+                    $issueEntity->setEstimatedTokens(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $extractedCodePath))));
+                    $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $unoptimizedCodePath))));
 
                     $this->entityManager->persist($issueEntity);
+                    $this->entityManager->flush();
                 }
             }
             $this->entityManager->flush();

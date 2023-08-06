@@ -45,7 +45,8 @@
         "symfony/webpack-encore-bundle": "^2.0",
         "symfony/yaml": "6.3.*",
         "twig/extra-bundle": "^2.12|^3.0",
-        "twig/twig": "^2.12|^3.0"
+        "twig/twig": "^2.12|^3.0",
+        "yethee/tiktoken": "^0.1.2"
     },
     "config": {
         "allow-plugins": {
