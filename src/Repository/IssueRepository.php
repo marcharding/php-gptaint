@@ -63,4 +63,25 @@ class IssueRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    public function findDistinctIssueTypes(): array
+    {
+        return $this->createQueryBuilder('i')
+            ->select('i.type, COUNT(i.id) as typeCount')
+            ->groupBy('i.type')
+            ->orderBy('typeCount', 'DESC')
+            ->getQuery()
+
+            ->getResult();
+    }
+
+    public function findByIssueType(string $type): array
+    {
+        return $this->createQueryBuilder('i')
+            ->where('i.type = :type')
+            ->setParameter('type', $type)
+            ->getQuery()
+            ->getResult();
+    }
+
 }

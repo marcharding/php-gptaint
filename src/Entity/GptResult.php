@@ -20,6 +20,15 @@ class GptResult
     #[ORM\ManyToOne(inversedBy: 'gptResults')]
     private ?Issue $issue = null;
 
+    #[ORM\Column]
+    private ?int $exploitProbability = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $analysisResult = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $gptVersion = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -45,6 +54,42 @@ class GptResult
     public function setIssue(?Issue $issue): static
     {
         $this->issue = $issue;
+
+        return $this;
+    }
+
+    public function getExploitProbability(): ?int
+    {
+        return $this->exploitProbability;
+    }
+
+    public function setExploitProbability(int $exploitProbability): static
+    {
+        $this->exploitProbability = $exploitProbability;
+
+        return $this;
+    }
+
+    public function getAnalysisResult(): ?string
+    {
+        return $this->analysisResult;
+    }
+
+    public function setAnalysisResult(string $analysisResult): static
+    {
+        $this->analysisResult = $analysisResult;
+
+        return $this;
+    }
+
+    public function getGptVersion(): ?string
+    {
+        return $this->gptVersion;
+    }
+
+    public function setGptVersion(string $gptVersion): static
+    {
+        $this->gptVersion = $gptVersion;
 
         return $this;
     }

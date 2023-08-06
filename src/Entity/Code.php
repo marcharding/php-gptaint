@@ -92,4 +92,30 @@ class Code
 
         return $this;
     }
+
+    public function getIssuesProbabilityGreater80(): int
+    {
+        $countIssuesOver80 = 0;
+
+        foreach ($this->getIssues() as $issue) {
+            $gptProbabilities = [];
+
+            foreach ($issue->getGptResults() as $gptResult) {
+                // Assuming 'gpt_probabilit' is a property in $gptResult containing the probability value
+                $gptProbabilities[] = $gptResult->getExploitProbability();
+            }
+
+            $totalValues = count($gptProbabilities);
+
+            if ($totalValues > 0) {
+                $average = array_sum($gptProbabilities) / $totalValues;
+
+                if ($average >= 80) {
+                    $countIssuesOver80++;
+                }
+            }
+        }
+
+        return $countIssuesOver80;
+    }
 }

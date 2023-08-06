@@ -21,6 +21,26 @@ class IssueController extends AbstractController
         ]);
     }
 
+    #[Route('/issue_type_list', name: 'issue_types_list')]
+    public function list(IssueRepository $issueRepository): Response
+    {
+        $issueTypes = $issueRepository->findDistinctIssueTypes();
+
+        return $this->render('issue/issue_group.html.twig', [
+            'issueTypes' => $issueTypes,
+        ]);
+    }
+
+    #[Route('/issue_type/{issueType}', name: 'issue_list_by_type')]
+    public function listByType(string $issueType, IssueRepository $issueRepository): Response
+    {
+        $issues = $issueRepository->findByIssueType($issueType);
+
+        return $this->render('issue/issue_by_type.html.twig', [
+            'issues' => $issues,
+        ]);
+    }
+
     #[Route('/new', name: 'app_issue_new', methods: ['GET', 'POST'])]
     public function new(Request $request, IssueRepository $issueRepository): Response
     {
