@@ -51,17 +51,20 @@
     <div class="mx-auto py-16">
         <div class="px-4 sm:px-0">
             <h3 class="text-2xl font-bold leading-10 tracking-tight text-gray-900">Issues</h3>
-            <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500">Found issues</p>
-        </div>
+          </div>
         <dl class="mt-4 space-y-6 divide-y divide-gray-900/10">
             {% for issue in code.issues %}
                 <div class="pt-6" x-data="{open: false}">
                     <dt>
-                        <button type="button" class="flex w-full items-start justify-between text-left text-gray-900"
-                                aria-controls="faq-0" aria-expanded="false" @click="open = !open">
-                            <span class="text-base font-semibold leading-7">{{ issue.description }} <span
-                                        class="text-xs">({{ issue.type }}, {{ issue.taintId }}, {{ issue.file }})</span></span>
-                            <span class="ml-6 flex h-7 items-center">
+                        <div class="flex w-full justify-between text-left text-gray-900">
+                            <span class="text-base font-semibold leading-7">{{ issue.description }}
+                                <span class="text-xs">({{ issue.type }}, {{ issue.taintId }}, {{ issue.file }})</span>
+                            </span>
+                            <span class="flex">
+                                <span class="ml-6 flex h-7 items-center">
+                                    <a href="{{ path('app_issue_show', {'id': issue.id}) }}">show</a>
+                                </span>
+                                <span class="ml-6 flex h-7 items-center" @click="open = !open">
                                     <svg class="h-6 w-6" x-bind:class="{ 'hidden': open }" x-init="open = false"
                                          fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
                                          aria-hidden="true">
@@ -72,18 +75,17 @@
                                          aria-hidden="true">
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/>
                                     </svg>
-                                  </span>
-                        </button>
+                                </span>
+                            </span>
+                        </div>
                     </dt>
                     <dd class="mt-2" x-bind:class="{ 'hidden': !open }" x-init="open = false" id="faq-0">
-                        {{ issue.description }}
                         {# TODO: Add ide links #}
                         {# <a href="phpstorm://open?url=file:///home/david/dev/symfony/templates/list.html.twig&line=50">Link</a> #}
                         {# <a href="vscode://open?url=file:///home/david/dev/symfony/templates/list.html.twig&line=50">link</a> #}
                         <p class="text-base leading-7 text-gray-600">
                             <pre><code class="text-xs py-16 language-php">{{ issue.psalmResult }}</code></pre>
                         </p>
-                        <a href="{{ path('app_issue_show', {'id': issue.id}) }}">show</a>
                     </dd>
                 </div>
             {% endfor %}

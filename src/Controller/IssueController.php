@@ -5,9 +5,14 @@ namespace App\Controller;
 use App\Entity\Issue;
 use App\Form\Issue1Type;
 use App\Repository\IssueRepository;
+use App\Service\CodeExtractor\CodeExtractor;
+use App\Service\SarifToFlatArrayConverter;
+use App\Service\TaintTypes;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/issue')]
@@ -41,6 +46,16 @@ class IssueController extends AbstractController
         ]);
     }
 
+    #[Route('/issue_with_gpt_result', name: 'issue_with_gpt_result')]
+    public function listWithGptResultType(IssueRepository $issueRepository): Response
+    {
+        $issues = $issueRepository->findAllWithGptResult();
+
+        return $this->render('issue/issues_with_gpt_result.html.twig', [
+            'issues' => $issues,
+        ]);
+    }
+
     #[Route('/new', name: 'app_issue_new', methods: ['GET', 'POST'])]
     public function new(Request $request, IssueRepository $issueRepository): Response
     {
@@ -61,9 +76,28 @@ class IssueController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_issue_show', methods: ['GET'])]
-    public function show(Issue $issue): Response
+    public function show(Issue $issue, ManagerRegistry $managerRegistry): Response
     {
+        $phpSerializer = new PhpSerializer;
+        $connection = $managerRegistry->getConnection();
+        $result = $connection
+            ->prepare("SELECT * FROM messenger_messages ORDER BY created_at")
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $position = 0;
+        $result = array_filter(
+            array_map(function ($item) use ($phpSerializer, $issue, &$position) {
+                $item['message'] = $phpSerializer->decode($item)->getMessage();
+                $item['position'] = $position;
+                $position++;
+                if ($item['message']->getId() === $issue->getId()) {
+                    return $item;
+                }
+            }, $result));
+
         return $this->render('issue/show.html.twig', [
+            'queue' => $result,
             'issue' => $issue,
         ]);
     }
@@ -95,4 +129,71 @@ class IssueController extends AbstractController
 
         return $this->redirectToRoute('app_issue_index', [], Response::HTTP_SEE_OTHER);
     }
+
+    #[Route('/{id}/extract-code', name: 'app_issue_extract_code', methods: ['GET'])]
+    public function extractCode(Issue $issue, ManagerRegistry $managerRegistry, $projectDir): Response
+    {
+        $codeExtractor = new CodeExtractor();
+        $folderName = $issue->getCode()->getDirectory();;
+
+        $s = new SarifToFlatArrayConverter();
+        $psalmResultFile = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/sarif' . DIRECTORY_SEPARATOR . $folderName . '.sarif';
+        $psalmResultFile = json_decode(file_get_contents($psalmResultFile), true);
+        $sarifResults = $s->getArray($psalmResultFile);
+
+        $issues = $this->getPsalmResultsArray($projectDir, $folderName);
+
+
+        // store optimized codepath and unoptimized for token comparison / effectiveness
+        $extractedCodePath = "";
+        $unoptimizedCodePath = "";
+
+        $entry = $sarifResults[$issue->getTaintId() . '_' . $issue->getFile()];
+        foreach ($entry["locations"] as $item) {
+            dump($item['file'], $item["region"]['startLine']);
+            $pluginRoot = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins_tainted' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
+            $extractedCodePath .= "// FILE: {$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
+            $extractedCodePath .= $codeExtractor->extractCodeLeadingToLine($pluginRoot . $item['file'], $item["region"]['startLine']);
+            $extractedCodePath .= PHP_EOL . PHP_EOL . PHP_EOL;
+            $unoptimizedCodePath .= file_get_contents($pluginRoot . $item['file']);
+        }
+
+        dump($extractedCodePath);
+
+        exit;
+
+
+    }
+
+
+    /**
+     * @param $folderName
+     * @return array
+     */
+    public function getPsalmResultsArray($projectDir, $folderName): array
+    {
+        $psalmResultFile = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/results' . DIRECTORY_SEPARATOR . $folderName . '.txt';
+        $text = file_get_contents($psalmResultFile);
+
+        // Remove the psalm footer section
+        $footerPattern = '/\n-{12,}\n.*?$/s';
+        $text = preg_replace($footerPattern, '', $text);
+
+        $pattern = '/ERROR: ([\w\s]+) - (\S+):(\d+:\d+) - (.+?)\n([\s\S]+?)(?=\n\nERROR|$)/';
+        preg_match_all($pattern, $text, $matches, PREG_SET_ORDER);
+
+        $errors = [];
+        foreach ($matches as $match) {
+            $errors[] = [
+                'errorType' => $match[1],
+                'errorId' => TaintTypes::getIdByName($match[1]),
+                'file' => $match[2] . ':' . $match[3],
+                'description' => $match[4],
+                'content' => $match[5]
+            ];
+        }
+
+        return $errors;
+    }
+
 }
