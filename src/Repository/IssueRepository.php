@@ -84,4 +84,14 @@ class IssueRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findAllWithGptResult(): array
+    {
+       return $this->createQueryBuilder('i')
+            ->innerJoin('i.gptResults', 'g')
+            ->groupBy('i')
+            ->orderBy('AVG(g.exploitProbability)', 'DESC')
+            ->getQuery()
+           ->getResult();
+    }
+
 }

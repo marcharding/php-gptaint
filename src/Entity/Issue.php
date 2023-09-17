@@ -19,7 +19,6 @@ class Issue
     #[ORM\Column]
     private ?int $taintId = null;
 
-
     /**
      * @ORM\ManyToOne(targetEntity="Issue")
      * @ORM\JoinColumn(name="issue_id", referencedColumnName="id")
@@ -201,4 +200,19 @@ class Issue
 
         return $this;
     }
+
+    public function probabilityAverage(): int
+    {
+        if(!$this->getGptResults()){
+            return 0;
+        }
+
+        $probabilityAverage = 0;
+        foreach ($this->getGptResults() as $gptResult) {
+            $probabilityAverage+= $gptResult->getExploitProbability();
+        }
+
+        return $probabilityAverage / count($this->getGptResults());
+    }
+
 }
