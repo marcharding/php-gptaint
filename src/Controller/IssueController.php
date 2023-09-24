@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
 use Symfony\Component\Routing\Annotation\Route;
+use Yethee\Tiktoken\EncoderProvider;
 
 #[Route('/issue')]
 class IssueController extends AbstractController
@@ -136,21 +137,19 @@ class IssueController extends AbstractController
         $codeExtractor = new CodeExtractor();
         $folderName = $issue->getCode()->getDirectory();;
 
+        $provider = new EncoderProvider();
+        $encoder = $provider->get('cl100k_base');
+
         $s = new SarifToFlatArrayConverter();
         $psalmResultFile = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/sarif' . DIRECTORY_SEPARATOR . $folderName . '.sarif';
         $psalmResultFile = json_decode(file_get_contents($psalmResultFile), true);
         $sarifResults = $s->getArray($psalmResultFile);
 
-        $issues = $this->getPsalmResultsArray($projectDir, $folderName);
-
-
         // store optimized codepath and unoptimized for token comparison / effectiveness
         $extractedCodePath = "";
         $unoptimizedCodePath = "";
-
         $entry = $sarifResults[$issue->getTaintId() . '_' . $issue->getFile()];
         foreach ($entry["locations"] as $item) {
-            dump($item['file'], $item["region"]['startLine']);
             $pluginRoot = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins_tainted' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
             $extractedCodePath .= "// FILE: {$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
             $extractedCodePath .= $codeExtractor->extractCodeLeadingToLine($pluginRoot . $item['file'], $item["region"]['startLine']);
@@ -158,13 +157,15 @@ class IssueController extends AbstractController
             $unoptimizedCodePath .= file_get_contents($pluginRoot . $item['file']);
         }
 
-        dump($extractedCodePath);
+        $issue->setExtractedCodePath($extractedCodePath);
+        $issue->setEstimatedTokens(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $extractedCodePath))));
+        $issue->setEstimatedTokensUnoptimized(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $unoptimizedCodePath))));
 
-        exit;
+        $managerRegistry->getManager()->persist($issue);
+        $managerRegistry->getManager()->flush();
 
-
+        return $this->redirectToRoute('app_issue_show', ['id' => $issue->getId()]);
     }
-
 
     /**
      * @param $folderName
