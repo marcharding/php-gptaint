@@ -35,11 +35,13 @@
                 </div>
                 <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                     <dt class="text-sm leading-6 text-gray-900">Plugin</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0 flex justify-between">
                         <a href="{{ path('app_code_show', {'id': issue.code.id}) }}"
-                           class=" text-indigo-600 text-sm shadow-sm hover:text-indigo hover:underline">
+                           class="text-indigo-600 text-sm shadow-sm hover:text-indigo hover:underline">
                             {{ issue.code.name }}
                         </a>
+                        <a class="text-indigo-600 font-bold text-sm shadow-sm hover:text-indigo hover:underline"
+                           href="vscode://file/{{ kernelProjectDir }}/data/wordpress/plugins_tainted/{{ issue.code.directory }}">VS Code</a>
                     </dd>
                 </div>
             </dl>
