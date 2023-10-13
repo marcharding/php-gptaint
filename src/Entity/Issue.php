@@ -33,6 +33,7 @@ class Issue
     private ?Code $code = null;
 
     #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]
+    #[ORM\OrderBy(["id" => "DESC"])]
     private Collection $gptResults;
 
     #[ORM\Column(length: 255)]
