@@ -28,14 +28,12 @@ class GptMessageHandler implements MessageHandlerInterface
         $io = new SymfonyStyle(new ArgvInput(), new ConsoleOutput());
         $issue = $this->entityManager->getRepository(Issue::class)->findOneBy(['id' => $message->getId()]);
 
-        $io->text("Current Plugin: {$issue->getCode()->getName()}");
-        $gptResult = $this->gptQuery->queryGpt($issue, false);
+        $io->writeln("Querying GPT for plugin '{$issue->getCode()->getName()}', issue id {$message->getId()}");
+
+        $gptResult = $this->gptQuery->queryGpt($issue, true);
         $this->entityManager->persist($gptResult);
         $this->entityManager->flush();
-        $io->success("Success: {$issue->getCode()->getName()}");
 
-        // TODO: Should also work with monolog, figure out how
-        // Need to show result in console view when using the messenger consume
-        echo $issue->getCode()->getName() . ' - ' . $issue->getType() . "proccessed" . PHP_EOL;
+        $io->success("OK: {$issue->getCode()->getName()} / {$issue->getType()}");
     }
 }
