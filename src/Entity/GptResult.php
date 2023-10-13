@@ -26,6 +26,9 @@ class GptResult
     #[ORM\Column(type: Types::TEXT)]
     private ?string $analysisResult = null;
 
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $exploitExample = null;
+
     #[ORM\Column(length: 255)]
     private ?string $gptVersion = null;
 
@@ -92,5 +95,15 @@ class GptResult
         $this->gptVersion = $gptVersion;
 
         return $this;
+    }
+
+    public function getExploitExample(): ?string
+    {
+        return $this->exploitExample;
+    }
+
+    public function setExploitExample(?string $exploitExample): void
+    {
+        $this->exploitExample = $exploitExample;
     }
 }

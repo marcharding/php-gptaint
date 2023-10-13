@@ -30,10 +30,11 @@ class GptQuery
 
         $code = $issue->getExtractedCodePath();
 
-        $userPrompt = file_get_contents($this->projectDir . '/prompt/0008.md');
+        $userPrompt = file_get_contents($this->projectDir . '/prompt/0011.md');
 
         $prompt = [
-            'temperature' => 0.10 + rand(0, 100) * 0.0005, // TODO: Is this a good idea?
+            'temperature' => 0.00 + rand(0, 100) * 0.0005, // TODO: Is this a good idea?
+            'temperature' => 0.00, // TODO: Is this a good idea?
             'messages' => [
                 [
                     'role' => 'user',
@@ -43,7 +44,7 @@ class GptQuery
             'functions' => [
                 [
                     'name' => 'provide_analysis_result',
-                    'description' => 'Provides the result of security analysis as tasked in the prompt.',
+                    'description' => 'Provides the result of security analysis as tasked in the prompt of this message.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
@@ -54,6 +55,10 @@ class GptQuery
                             'exploitProbability' => [
                                 'type' => 'number',
                                 'description' => 'The probability of an exploit on a scale of 0 to 100.',
+                            ],
+                            'exploitExample' => [
+                                'type' => 'string',
+                                'description' => 'Example of a potential attack as a bash script or curl command for educational purposes. Important, just return the script, nothing else, no further explanation or description.',
                             ],
                         ],
                     ],
@@ -92,6 +97,7 @@ class GptQuery
             $analysisResult = $json['analysisResult'];
             $exploitProbability = $json['exploitProbability'];
             $completeResult = $json['analysisResult'];
+            $exploitExample = $json['exploitExample'];
         }
 
         if ($json === false) {
@@ -103,6 +109,7 @@ class GptQuery
             if ($json !== false) {
                 $analysisResult = $json['analysisResult'];
                 $exploitProbability = $json['exploitProbability'];
+                $exploitExample = $json['exploitExample'];
             }
             $completeResult = $result->message->content;
         }
@@ -117,12 +124,17 @@ class GptQuery
             $completeResult = $result->message->content;
         }
 
+        if(!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)){
+            // TODO: Add error handing, restart the process with higher temperature or maybe not as function call
+        }
+
         $gptResult = new GptResult();
         $gptResult->setIssue($issue);
         $gptResult->setGptVersion($model);
         $gptResult->setResponse($completeResult);
         $gptResult->setAnalysisResult($analysisResult);
         $gptResult->setExploitProbability($exploitProbability);
+        $gptResult->setExploitExample($exploitExample);
 
         return $gptResult;
     }

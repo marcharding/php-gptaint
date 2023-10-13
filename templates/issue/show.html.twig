@@ -79,6 +79,12 @@
                             <div class="w-8/12">
                                 {{ gptResult.response|nl2br }}
                             </div>
+                            <div class="font-bold w-8/12 pt-6">
+                                Exploit example:
+                                <pre>
+                                    <code class="font-normal text-xs pb-2 language-php">{{ gptResult.exploitExample|nl2br }}</code>
+                                </pre>
+                            </div>
                         </div>
                 </div>
             {% endfor %}
