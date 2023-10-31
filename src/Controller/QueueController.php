@@ -19,7 +19,7 @@ class QueueController extends AbstractController
         $phpSerializer = new PhpSerializer;
         $connection = $managerRegistry->getConnection();
         $result = $connection
-            ->prepare("SELECT * FROM messenger_messages ORDER BY created_at")
+            ->prepare("SELECT * FROM messenger_messages WHERE queue_name = 'default' ORDER BY created_at")
             ->executeQuery()
             ->fetchAllAssociative();
 
