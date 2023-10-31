@@ -151,7 +151,7 @@ class IssueController extends AbstractController
         $entry = $sarifResults[$issue->getTaintId() . '_' . $issue->getFile()];
         foreach ($entry["locations"] as $item) {
             $pluginRoot = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins_tainted' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
-            $extractedCodePath .= "// FILE: {$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
+            $extractedCodePath .= "// @FILE: /wp-content/plugins/{$folderName}/{$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
             $extractedCodePath .= $codeExtractor->extractCodeLeadingToLine($pluginRoot . $item['file'], $item["region"]['startLine']);
             $extractedCodePath .= PHP_EOL . PHP_EOL . PHP_EOL;
             $unoptimizedCodePath .= file_get_contents($pluginRoot . $item['file']);

@@ -21,6 +21,10 @@ class GptQuery
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
         $this->openAiClient = OpenAI::client($openAiToken);
+        $this->openAiClient =  OpenAI::factory()
+            ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
+            ->withApiKey($openAiToken)
+            ->make();
     }
 
     public function queryGpt(Issue $issue, $functionCall = true): GptResult
