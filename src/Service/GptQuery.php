@@ -27,18 +27,18 @@ class GptQuery
             ->make();
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true): GptResult
+    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.00): GptResult|array|false
     {
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
         $code = $issue->getExtractedCodePath();
 
-        $userPrompt = file_get_contents($this->projectDir . '/prompt/0011.md');
+        // TODO: Store different prompt in database / fixture and also store the prompt with the result to further refine it later on
+        $userPrompt = file_get_contents($this->projectDir . '/prompt/0014.md');
 
         $prompt = [
-            'temperature' => 0.00 + rand(0, 100) * 0.0005, // TODO: Is this a good idea?
-            'temperature' => 0.00, // TODO: Is this a good idea?
+            'temperature' => $temperature,
             'messages' => [
                 [
                     'role' => 'user',
@@ -54,7 +54,7 @@ class GptQuery
                         'properties' => [
                             'analysisResult' => [
                                 'type' => 'string',
-                                'description' => 'The detailed analysis report as if the function was not called.',
+                                'description' => 'The detailed analysis report as if the function was not called.', //  Make sure the string is json safe and probably escaped.
                             ],
                             'exploitProbability' => [
                                 'type' => 'number',
@@ -82,7 +82,9 @@ class GptQuery
             $numberOfTokens += count($encoder->encode(json_encode($prompt['functions'])));
         }
 
-        if ($numberOfTokens > 4096) {
+        if ($numberOfTokens > 16385) {
+            return false;
+        } else if ($numberOfTokens > 4096) {
             $model = 'gpt-3.5-turbo-16k-0613';
         } else {
             $model = 'gpt-3.5-turbo-0613';
@@ -96,12 +98,38 @@ class GptQuery
         $json = false;
 
         if (isset($result->message->functionCall)) {
-            $json = $result->message->functionCall->arguments;
-            $json = json_decode($json, true);
-            $analysisResult = $json['analysisResult'];
-            $exploitProbability = $json['exploitProbability'];
-            $completeResult = $json['analysisResult'];
-            $exploitExample = $json['exploitExample'];
+            $jsonString = $result->message->functionCall->arguments;
+
+            // TODO: Is this the best we can do?
+            $json = json_decode($jsonString, true);
+            if($json === null){
+                $pattern = '#"analysisResult":\s*"(?P<analysisResult>.*?)",\s*"exploitProbability":\s*(?P<exploitProbability>\d+),\s*"exploitExample":\s*"(?P<exploitExample>.*?)"#ism';
+                $matches = [];
+                if (preg_match($pattern, $jsonString, $matches)) {
+                    $json = [
+                        'analysisResult' => $matches['analysisResult'],
+                        'exploitProbability' => (int)$matches['exploitProbability'],
+                        'exploitExample' => $matches['exploitExample'] ?? 'Could not get exploit example',
+                    ];
+                }
+            }
+
+            $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result' ;
+            $exploitProbability = $json['exploitProbability'] ?? null;
+
+            // TODO: Sometime some values are not set in the json response, try to get them via regex
+            // TODO: Refactor this into a better regex and reuseable function
+
+            if(!isset($json['exploitProbability'])){
+                $pattern = '#(?<exploitProbability>\d+)?(%)#ism';
+                $matches = [];
+                if (preg_match($pattern, $analysisResult, $matches)) {
+                    $exploitProbability = intval($matches['exploitProbability']);
+                }
+            }
+
+            $completeResult = $json['analysisResult'] ?? 'Could not get analysis result';
+            $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
         }
 
         if ($json === false) {
@@ -111,9 +139,9 @@ class GptQuery
             $lastLine = preg_replace($regex, '"$1"', $lastLine);
             $json = json_decode($lastLine, true);
             if ($json !== false) {
-                $analysisResult = $json['analysisResult'];
-                $exploitProbability = $json['exploitProbability'];
-                $exploitExample = $json['exploitExample'];
+                $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
+                $exploitProbability = $json['exploitProbability'] ?? null;
+                $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
             }
             $completeResult = $result->message->content;
         }
@@ -129,7 +157,8 @@ class GptQuery
         }
 
         if(!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)){
-            // TODO: Add error handing, restart the process with higher temperature or maybe not as function call
+            // TODO: Better error handling
+            return [['completeResult' => $completeResult, 'analysisResult' => $analysisResult, 'exploitProbability' => $exploitProbability, 'exploitExample' => $exploitExample], $response->toArray()];
         }
 
         $gptResult = new GptResult();
