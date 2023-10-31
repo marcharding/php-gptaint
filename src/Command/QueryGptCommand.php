@@ -11,6 +11,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -43,6 +44,7 @@ class QueryGptCommand extends Command
             ->addOption('taintTypes', 't', InputArgument::OPTIONAL, 'Taint types which should be analyzed with GPT')
             ->addOption('issueId', 'i', InputArgument::OPTIONAL, 'Issue ID which should be analyzed with GPT')
             ->addOption('codeId', 'c', InputArgument::OPTIONAL, 'Code ID which issues should be analyzed with GPT')
+            ->addOption('onlyEmpty', 'oe', InputOption::VALUE_NONE, 'A boolean flag to only list not already queried issues')
             ->setHelp(self::displayHelp());
     }
 
@@ -53,6 +55,7 @@ class QueryGptCommand extends Command
         $taintTypes = $input->getOption('taintTypes');
         $issueId = $input->getOption('issueId');
         $codeId = $input->getOption('codeId');
+        $onlyEmpty = $input->getOption('onlyEmpty');
 
         if (empty($taintTypes) && empty($issueId) && empty($codeId)) {
             $io->error("At least one option must be given.");
@@ -76,14 +79,10 @@ class QueryGptCommand extends Command
                 ->setParameter('codeId', $codeId);
         }
 
-        if (true) {
+        if ($onlyEmpty) {
             $qb->leftJoin('i.gptResults', 'g')
                 ->andWhere($qb->expr()->isNull('g.id'));
         }
-
-
-        $qb->andWhere('i.code != :codeId')
-            ->setParameter('codeId', 433);
 
         $issues = $qb->getQuery()->getResult();
 
