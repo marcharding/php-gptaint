@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use ReflectionClass;
+
 class TaintTypes
 {
     const TaintedCallable = 243;
@@ -36,6 +38,12 @@ class TaintTypes
         $constantName = array_search($issueId, $constants);
 
         return $constantName !== false ? $constantName : null;
+    }
+
+    public static function getConstants()
+    {
+        $oClass = new ReflectionClass(__CLASS__);
+        return $oClass->getConstants();
     }
 
 }
