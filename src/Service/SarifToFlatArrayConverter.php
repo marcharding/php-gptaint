@@ -13,7 +13,6 @@ class SarifToFlatArrayConverter
         $threadFlows = [];
 
         foreach ($sarifResult['runs'][0]['results'] as $result) {
-
             $threadFlow = [];
             $threadFlow['id'] = $result['ruleId'];
             $threadFlow['description'] = $result['message']['text'];
@@ -23,7 +22,6 @@ class SarifToFlatArrayConverter
                 $linenumbersPerFile = [];
 
                 foreach ($location['locations'] as $loc) {
-
                     $url = $loc['location']['physicalLocation']['artifactLocation']['uri'];
 
                     // skip .phpstub entries
@@ -33,25 +31,24 @@ class SarifToFlatArrayConverter
 
                     // we only need the last git inside a file, the path inside a file is resolved via the code extractor
                     $linenumbersPerFile = array_filter($linenumbersPerFile, function ($entry) use ($result, $url) {
-                        return strpos($entry, $result['ruleId'] . '_' . $url . ':') !== 0;
+                        return strpos($entry, $result['ruleId'].'_'.$url.':') !== 0;
                     }, ARRAY_FILTER_USE_KEY);
 
                     $lineNumber = $loc['location']['physicalLocation']['region']['startLine'];
                     $columnNumber = $loc['location']['physicalLocation']['region']['startColumn'];
 
                     // sometime the linenumbers of the last result of the thread flow and ht
-                    if($url === $artifactLocationUri['artifactLocation']['uri']) {
+                    if ($url === $artifactLocationUri['artifactLocation']['uri']) {
                         $lineNumber = $artifactLocationUri['region']['startLine'];
                         $columnNumber = $artifactLocationUri['region']['startColumn'];
                     }
 
-                    $linenumbersPerFile[$result['ruleId'] . '_' . $url . ":$lineNumber:$columnNumber"] = [
+                    $linenumbersPerFile[$result['ruleId'].'_'.$url.":$lineNumber:$columnNumber"] = [
                         'file' => $url,
-                        'region' => $loc['location']['physicalLocation']['region']
+                        'region' => $loc['location']['physicalLocation']['region'],
                     ];
 
                     $threadFlow['locations'] = $linenumbersPerFile;
-
                 }
 
                 // use the last location of the current issue/threat as a index for the array, so we can map the psalm flow to this.

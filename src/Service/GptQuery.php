@@ -10,7 +10,6 @@ use Yethee\Tiktoken\EncoderProvider;
 
 class GptQuery
 {
-
     protected EntityManagerInterface $entityManager;
     protected OpenAI\Client $openAiClient;
 
@@ -20,8 +19,8 @@ class GptQuery
     {
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
-        $this->openAiClient = OpenAI::client($openAiToken);
-        $this->openAiClient =  OpenAI::factory()
+        $this->openAiClient = \OpenAI::client($openAiToken);
+        $this->openAiClient = \OpenAI::factory()
             ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
             ->withApiKey($openAiToken)
             ->make();
@@ -35,7 +34,7 @@ class GptQuery
         $code = $issue->getExtractedCodePath();
 
         // TODO: Store different prompt in database / fixture and also store the prompt with the result to further refine it later on
-        $userPrompt = file_get_contents($this->projectDir . '/prompt/0014.md');
+        $userPrompt = file_get_contents($this->projectDir.'/prompt/0014.md');
 
         $prompt = [
             'temperature' => $temperature,
@@ -66,9 +65,9 @@ class GptQuery
                             ],
                         ],
                     ],
-                ]
+                ],
             ],
-            'function_call' => ['name' => 'provide_analysis_result']
+            'function_call' => ['name' => 'provide_analysis_result'],
         ];
 
         if ($functionCall === false) {
@@ -84,7 +83,7 @@ class GptQuery
 
         if ($numberOfTokens > 16385) {
             return false;
-        } else if ($numberOfTokens > 4096) {
+        } elseif ($numberOfTokens > 4096) {
             $model = 'gpt-3.5-turbo-16k-0613';
         } else {
             $model = 'gpt-3.5-turbo-0613';
@@ -102,25 +101,25 @@ class GptQuery
 
             // TODO: Is this the best we can do?
             $json = json_decode($jsonString, true);
-            if($json === null){
+            if ($json === null) {
                 $pattern = '#"analysisResult":\s*"(?P<analysisResult>.*?)",\s*"exploitProbability":\s*(?P<exploitProbability>\d+),\s*"exploitExample":\s*"(?P<exploitExample>.*?)"#ism';
                 $matches = [];
                 if (preg_match($pattern, $jsonString, $matches)) {
                     $json = [
                         'analysisResult' => $matches['analysisResult'],
-                        'exploitProbability' => (int)$matches['exploitProbability'],
+                        'exploitProbability' => (int) $matches['exploitProbability'],
                         'exploitExample' => $matches['exploitExample'] ?? 'Could not get exploit example',
                     ];
                 }
             }
 
-            $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result' ;
+            $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
             $exploitProbability = $json['exploitProbability'] ?? null;
 
             // TODO: Sometime some values are not set in the json response, try to get them via regex
             // TODO: Refactor this into a better regex and reuseable function
 
-            if(!isset($json['exploitProbability'])){
+            if (!isset($json['exploitProbability'])) {
                 $pattern = '#(?<exploitProbability>\d+)?(%)#ism';
                 $matches = [];
                 if (preg_match($pattern, $analysisResult, $matches)) {
@@ -156,7 +155,7 @@ class GptQuery
             $completeResult = $result->message->content;
         }
 
-        if(!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)){
+        if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)) {
             // TODO: Better error handling
             return [['completeResult' => $completeResult, 'analysisResult' => $analysisResult, 'exploitProbability' => $exploitProbability, 'exploitExample' => $exploitExample], $response->toArray()];
         }

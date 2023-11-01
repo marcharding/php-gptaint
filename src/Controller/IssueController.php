@@ -79,10 +79,10 @@ class IssueController extends AbstractController
     #[Route('/{id}', name: 'app_issue_show', methods: ['GET'])]
     public function show(Issue $issue, ManagerRegistry $managerRegistry): Response
     {
-        $phpSerializer = new PhpSerializer;
+        $phpSerializer = new PhpSerializer();
         $connection = $managerRegistry->getConnection();
         $result = $connection
-            ->prepare("SELECT * FROM messenger_messages ORDER BY created_at")
+            ->prepare('SELECT * FROM messenger_messages ORDER BY created_at')
             ->executeQuery()
             ->fetchAllAssociative();
 
@@ -124,7 +124,7 @@ class IssueController extends AbstractController
     #[Route('/{id}', name: 'app_issue_delete', methods: ['POST'])]
     public function delete(Request $request, Issue $issue, IssueRepository $issueRepository): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $issue->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete'.$issue->getId(), $request->request->get('_token'))) {
             $issueRepository->remove($issue, true);
         }
 
@@ -135,31 +135,31 @@ class IssueController extends AbstractController
     public function extractCode(Issue $issue, ManagerRegistry $managerRegistry, $projectDir): Response
     {
         $codeExtractor = new CodeExtractor();
-        $folderName = $issue->getCode()->getDirectory();;
+        $folderName = $issue->getCode()->getDirectory();
 
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
         $s = new SarifToFlatArrayConverter();
-        $psalmResultFile = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/sarif' . DIRECTORY_SEPARATOR . $folderName . '.sarif';
+        $psalmResultFile = $projectDir.DIRECTORY_SEPARATOR.'data/wordpress/sarif'.DIRECTORY_SEPARATOR.$folderName.'.sarif';
         $psalmResultFile = json_decode(file_get_contents($psalmResultFile), true);
         $sarifResults = $s->getArray($psalmResultFile);
 
         // store optimized codepath and unoptimized for token comparison / effectiveness
-        $extractedCodePath = "";
-        $unoptimizedCodePath = "";
-        $entry = $sarifResults[$issue->getTaintId() . '_' . $issue->getFile()];
-        foreach ($entry["locations"] as $item) {
-            $pluginRoot = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins_tainted' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
-            $extractedCodePath .= "// @FILE: /wp-content/plugins/{$folderName}/{$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
-            $extractedCodePath .= $codeExtractor->extractCodeLeadingToLine($pluginRoot . $item['file'], $item["region"]['startLine']);
-            $extractedCodePath .= PHP_EOL . PHP_EOL . PHP_EOL;
-            $unoptimizedCodePath .= file_get_contents($pluginRoot . $item['file']);
+        $extractedCodePath = '';
+        $unoptimizedCodePath = '';
+        $entry = $sarifResults[$issue->getTaintId().'_'.$issue->getFile()];
+        foreach ($entry['locations'] as $item) {
+            $pluginRoot = $projectDir.DIRECTORY_SEPARATOR.'data/wordpress/plugins_tainted'.DIRECTORY_SEPARATOR.$folderName.DIRECTORY_SEPARATOR;
+            $extractedCodePath .= "// @FILE: /wp-content/plugins/{$folderName}/{$item['file']}".PHP_EOL.PHP_EOL.PHP_EOL;
+            $extractedCodePath .= $codeExtractor->extractCodeLeadingToLine($pluginRoot.$item['file'], $item['region']['startLine']);
+            $extractedCodePath .= PHP_EOL.PHP_EOL.PHP_EOL;
+            $unoptimizedCodePath .= file_get_contents($pluginRoot.$item['file']);
         }
 
         $issue->setExtractedCodePath($extractedCodePath);
-        $issue->setEstimatedTokens(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $extractedCodePath))));
-        $issue->setEstimatedTokensUnoptimized(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $unoptimizedCodePath))));
+        $issue->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $extractedCodePath))));
+        $issue->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $unoptimizedCodePath))));
 
         $managerRegistry->getManager()->persist($issue);
         $managerRegistry->getManager()->flush();
@@ -167,13 +167,9 @@ class IssueController extends AbstractController
         return $this->redirectToRoute('app_issue_show', ['id' => $issue->getId()]);
     }
 
-    /**
-     * @param $folderName
-     * @return array
-     */
     public function getPsalmResultsArray($projectDir, $folderName): array
     {
-        $psalmResultFile = $projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/results' . DIRECTORY_SEPARATOR . $folderName . '.txt';
+        $psalmResultFile = $projectDir.DIRECTORY_SEPARATOR.'data/wordpress/results'.DIRECTORY_SEPARATOR.$folderName.'.txt';
         $text = file_get_contents($psalmResultFile);
 
         // Remove the psalm footer section
@@ -188,13 +184,12 @@ class IssueController extends AbstractController
             $errors[] = [
                 'errorType' => $match[1],
                 'errorId' => TaintTypes::getIdByName($match[1]),
-                'file' => $match[2] . ':' . $match[3],
+                'file' => $match[2].':'.$match[3],
                 'description' => $match[4],
-                'content' => $match[5]
+                'content' => $match[5],
             ];
         }
 
         return $errors;
     }
-
 }

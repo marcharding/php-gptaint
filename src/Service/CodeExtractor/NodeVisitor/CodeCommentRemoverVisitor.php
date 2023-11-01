@@ -15,6 +15,7 @@ class CodeCommentRemoverVisitor extends NodeVisitorAbstract
             if ($comments) {
                 $commentsAsText = array_reduce($comments, function ($commentsAsText, $comment) {
                     $commentsAsText .= $comment->getText();
+
                     return $commentsAsText;
                 });
                 if (str_contains($commentsAsText, NodeLineNumberMatchingVisitor::COMMENT_PREFIX)) {

@@ -26,11 +26,11 @@ class CodeExtractor
     {
         $code = file_get_contents($filePath);
 
-        $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
         $ast = $parser->parse($code);
 
         $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NodeConnectingVisitor);
+        $traverser->addVisitor(new NodeConnectingVisitor());
 
         $visitor = new NodeLineNumberMatchingVisitor($targetLineNumber);
         $traverser->addVisitor($visitor);
@@ -62,7 +62,7 @@ class CodeExtractor
             }
         }
 
-        if(!$currentFunction) {
+        if (!$currentFunction) {
             // the same but for a function
             $currentFunctionCall = null;
             $matchingNode = $visitor->getNode();
@@ -88,7 +88,7 @@ class CodeExtractor
 
         if ($currentClassMethod) {
             $calledClassMethods = [];
-            if($currentClassMethod->stmts){
+            if ($currentClassMethod->stmts) {
                 $this->findCalledMethodsRecursive($ast, $currentClassMethod->stmts, $calledClassMethods);
             }
         }
@@ -106,8 +106,10 @@ class CodeExtractor
                             return false;
                         }
                     }
+
                     return true;
                 }
+
                 return null;
             });
             $matchingNodes = array_merge($matchingNodes, $matchingNodeResults);
@@ -141,7 +143,7 @@ class CodeExtractor
         return $modifiedCode;
     }
 
-    function findCalledMethodsRecursive($ast, array $stmts, array &$calledMethods)
+    public function findCalledMethodsRecursive($ast, array $stmts, array &$calledMethods)
     {
         foreach ($stmts as $stmt) {
             $expr = $stmt instanceof PhpParser\Node\Stmt\Expression ? $stmt->expr : $stmt;
@@ -165,12 +167,10 @@ class CodeExtractor
             ) {
                 $this->findCalledMethodsRecursive($ast, $expr->stmts ?? [], $calledMethods);
                 $this->findCalledMethodsRecursive($ast, [$stmt->cond ?? null] ?? [], $calledMethods);
-                // Recursively traverse the AST of the nested statements
+            // Recursively traverse the AST of the nested statements
             } elseif ($expr instanceof PhpParser\Node\Expr\FuncCall) {
-
             } elseif ($expr instanceof PhpParser\Node\Expr\MethodCall) {
                 if ($expr->var instanceof PhpParser\Node\Expr\Variable && $expr->var->name === 'this') {
-
                     $traverser = new NodeTraverser();
                     $visitor = new MethodCallToClassMethodVisitor($expr);
                     $traverser->addVisitor($visitor);
@@ -181,7 +181,7 @@ class CodeExtractor
 
                     // only add a method once, hopefully fixes endless recursion in
                     // amazon-auto-links/include/library/apf/factory/admin_page/_model/AdminPageFramework_ExportOptions.php:55:20
-                    if(is_null($classMethod) || isset($calledMethods[spl_object_id($classMethod)])){
+                    if (is_null($classMethod) || isset($calledMethods[spl_object_id($classMethod)])) {
                         continue;
                     }
                     $calledMethods[spl_object_id($classMethod)] = $classMethod;
@@ -189,10 +189,9 @@ class CodeExtractor
                     $calledMethods[] = $classMethod;
 
                     // Recursively traverse the AST of the newly found method
-                    if(isset($classMethod->stmts)){
+                    if (isset($classMethod->stmts)) {
                         $this->findCalledMethodsRecursive($ast, $classMethod->stmts, $calledMethods);
                     }
-
                 }
             } elseif ($expr instanceof PhpParser\Node\Expr\Assign) {
                 $this->findCalledMethodsRecursive($ast, [$expr->expr], $calledMethods);
@@ -201,5 +200,4 @@ class CodeExtractor
             }
         }
     }
-
 }

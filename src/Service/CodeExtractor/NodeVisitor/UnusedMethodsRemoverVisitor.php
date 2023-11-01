@@ -8,7 +8,6 @@ use PhpParser\NodeVisitorAbstract;
 
 class UnusedMethodsRemoverVisitor extends NodeVisitorAbstract
 {
-
     private mixed $unused;
 
     public function __construct($unused)
@@ -23,6 +22,7 @@ class UnusedMethodsRemoverVisitor extends NodeVisitorAbstract
                 return NodeTraverser::REMOVE_NODE;
             }
         }
+
         return null;
     }
 }

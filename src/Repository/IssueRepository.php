@@ -39,30 +39,30 @@ class IssueRepository extends ServiceEntityRepository
         }
     }
 
-//    /**
-//     * @return Issue[] Returns an array of Issue objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('i')
-//            ->andWhere('i.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('i.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    //    /**
+    //     * @return Issue[] Returns an array of Issue objects
+    //     */
+    //    public function findByExampleField($value): array
+    //    {
+    //        return $this->createQueryBuilder('i')
+    //            ->andWhere('i.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->orderBy('i.id', 'ASC')
+    //            ->setMaxResults(10)
+    //            ->getQuery()
+    //            ->getResult()
+    //        ;
+    //    }
 
-//    public function findOneBySomeField($value): ?Issue
-//    {
-//        return $this->createQueryBuilder('i')
-//            ->andWhere('i.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    //    public function findOneBySomeField($value): ?Issue
+    //    {
+    //        return $this->createQueryBuilder('i')
+    //            ->andWhere('i.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->getQuery()
+    //            ->getOneOrNullResult()
+    //        ;
+    //    }
 
     public function findDistinctIssueTypes(): array
     {
@@ -86,12 +86,11 @@ class IssueRepository extends ServiceEntityRepository
 
     public function findAllWithGptResult(): array
     {
-       return $this->createQueryBuilder('i')
-            ->innerJoin('i.gptResults', 'g')
-            ->groupBy('i')
-            ->orderBy('AVG(g.exploitProbability)', 'DESC')
-            ->getQuery()
-           ->getResult();
+        return $this->createQueryBuilder('i')
+             ->innerJoin('i.gptResults', 'g')
+             ->groupBy('i')
+             ->orderBy('AVG(g.exploitProbability)', 'DESC')
+             ->getQuery()
+            ->getResult();
     }
-
 }

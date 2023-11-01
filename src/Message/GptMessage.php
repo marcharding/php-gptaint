@@ -15,5 +15,4 @@ class GptMessage
     {
         return $this->id;
     }
-
 }

@@ -16,7 +16,7 @@ class QueueController extends AbstractController
     #[Route('/', name: 'app_queue_index', methods: ['GET'])]
     public function index(CodeRepository $codeRepository, ManagerRegistry $managerRegistry, IssueRepository $issueRepository): Response
     {
-        $phpSerializer = new PhpSerializer;
+        $phpSerializer = new PhpSerializer();
         $connection = $managerRegistry->getConnection();
         $result = $connection
             ->prepare("SELECT * FROM messenger_messages WHERE queue_name = 'default' ORDER BY created_at")
@@ -26,6 +26,7 @@ class QueueController extends AbstractController
         $result = array_map(function ($item) use ($phpSerializer, $issueRepository) {
             $item['message'] = $phpSerializer->decode($item)->getMessage();
             $item['issue'] = $issueRepository->find($item['message']->getId());
+
             return $item;
         }, $result);
 

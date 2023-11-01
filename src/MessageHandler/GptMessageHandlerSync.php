@@ -7,7 +7,6 @@ use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 
 class GptMessageHandlerSync implements MessageHandlerInterface
 {
-
     private BaseGptMessageHandler $baseGptMessageHandler;
 
     public function __construct(BaseGptMessageHandler $baseGptMessageHandler)

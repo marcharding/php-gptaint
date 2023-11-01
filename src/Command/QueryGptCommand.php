@@ -22,7 +22,6 @@ use Symfony\Component\Messenger\MessageBusInterface;
 )]
 class QueryGptCommand extends Command
 {
-
     private EntityManagerInterface $entityManager;
 
     private MessageBusInterface $bus;
@@ -34,7 +33,7 @@ class QueryGptCommand extends Command
         parent::__construct();
         $this->projectDir = $projectDir;
         $this->entityManager = $entityManager;
-        $this->openAiClient = OpenAI::client($openAiToken);
+        $this->openAiClient = \OpenAI::client($openAiToken);
         $this->bus = $bus;
     }
 
@@ -58,7 +57,8 @@ class QueryGptCommand extends Command
         $onlyEmpty = $input->getOption('onlyEmpty');
 
         if (empty($taintTypes) && empty($issueId) && empty($codeId)) {
-            $io->error("At least one option must be given.");
+            $io->error('At least one option must be given.');
+
             return Command::INVALID;
         }
 
@@ -90,18 +90,18 @@ class QueryGptCommand extends Command
             $this->bus->dispatch(new GptMessageSync($issue->getId()));
         }
 
-        $io->success(sprintf("Processed %s issues", count($issues)));
+        $io->success(sprintf('Processed %s issues', count($issues)));
 
         return Command::SUCCESS;
     }
 
     public static function displayHelp(): string
     {
-        $constants = "";
+        $constants = '';
         foreach (TaintTypes::getConstants() as $constant => $taintType) {
-            $constants .= $constant . ": " . $taintType . PHP_EOL;
+            $constants .= $constant.': '.$taintType.PHP_EOL;
         }
+
         return $constants;
     }
-
 }

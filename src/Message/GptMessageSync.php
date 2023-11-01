@@ -15,5 +15,4 @@ class GptMessageSync
     {
         return $this->id;
     }
-
 }

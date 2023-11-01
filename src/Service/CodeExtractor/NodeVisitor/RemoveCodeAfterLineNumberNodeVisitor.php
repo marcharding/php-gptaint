@@ -8,7 +8,6 @@ use PhpParser\NodeVisitorAbstract;
 
 class RemoveCodeAfterLineNumberNodeVisitor extends NodeVisitorAbstract
 {
-
     private int $lineNumber;
 
     public function __construct($lineNumber)
@@ -27,5 +26,4 @@ class RemoveCodeAfterLineNumberNodeVisitor extends NodeVisitorAbstract
             return NodeTraverser::REMOVE_NODE;
         }
     }
-
 }

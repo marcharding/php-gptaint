@@ -43,10 +43,11 @@ class PopulateDbCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $directory = $this->projectDir . DIRECTORY_SEPARATOR . $input->getArgument('directory');
+        $directory = $this->projectDir.DIRECTORY_SEPARATOR.$input->getArgument('directory');
 
         if (!is_dir($directory)) {
             $io->error('The provided directory does not exist.');
+
             return Command::FAILURE;
         }
 
@@ -65,7 +66,7 @@ class PopulateDbCommand extends Command
                 $io->info("$name ($folderName)");
 
                 $s = new SarifToFlatArrayConverter();
-                $psalmResultFile = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/sarif' . DIRECTORY_SEPARATOR . $folderName . '.sarif';
+                $psalmResultFile = $this->projectDir.DIRECTORY_SEPARATOR.'data/wordpress/sarif'.DIRECTORY_SEPARATOR.$folderName.'.sarif';
                 $psalmResultFile = json_decode(file_get_contents($psalmResultFile), true);
                 $sarifResults = $s->getArray($psalmResultFile);
 
@@ -92,25 +93,25 @@ class PopulateDbCommand extends Command
                     $issueEntity->setFile($issue['file']);
                     $issueEntity->setDescription($issue['description']);
                     $issueEntity->setPsalmResult($issue['content']);
-                    $io->text($folderName . DIRECTORY_SEPARATOR . $issue['file']);
+                    $io->text($folderName.DIRECTORY_SEPARATOR.$issue['file']);
 
                     // store optimized codepath and unoptimized for token comparison / effectiveness
-                    $extractedCodePath = "";
-                    $unoptimizedCodePath = "";
-                    if (isset($sarifResults[$issue['errorId'] . '_' . $issue['file']])) {
-                        $entry = $sarifResults[$issue['errorId'] . '_' . $issue['file']];
-                        foreach ($entry["locations"] as $item) {
-                            $pluginRoot = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/plugins_tainted' . DIRECTORY_SEPARATOR . $folderName . DIRECTORY_SEPARATOR;
-                            $extractedCodePath .= "// FILE: {$item['file']}" . PHP_EOL . PHP_EOL . PHP_EOL;
-                            $extractedCodePath .= $this->codeExtractor->extractCodeLeadingToLine($pluginRoot . $item['file'], $item["region"]['startLine']);
-                            $extractedCodePath .= PHP_EOL . PHP_EOL . PHP_EOL;
-                            $unoptimizedCodePath .= file_get_contents($pluginRoot . $item['file']);
+                    $extractedCodePath = '';
+                    $unoptimizedCodePath = '';
+                    if (isset($sarifResults[$issue['errorId'].'_'.$issue['file']])) {
+                        $entry = $sarifResults[$issue['errorId'].'_'.$issue['file']];
+                        foreach ($entry['locations'] as $item) {
+                            $pluginRoot = $this->projectDir.DIRECTORY_SEPARATOR.'data/wordpress/plugins_tainted'.DIRECTORY_SEPARATOR.$folderName.DIRECTORY_SEPARATOR;
+                            $extractedCodePath .= "// FILE: {$item['file']}".PHP_EOL.PHP_EOL.PHP_EOL;
+                            $extractedCodePath .= $this->codeExtractor->extractCodeLeadingToLine($pluginRoot.$item['file'], $item['region']['startLine']);
+                            $extractedCodePath .= PHP_EOL.PHP_EOL.PHP_EOL;
+                            $unoptimizedCodePath .= file_get_contents($pluginRoot.$item['file']);
                         }
                     }
 
                     $issueEntity->setExtractedCodePath($extractedCodePath);
-                    $issueEntity->setEstimatedTokens(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $extractedCodePath))));
-                    $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv("UTF-8", "UTF-8//IGNORE", $unoptimizedCodePath))));
+                    $issueEntity->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $extractedCodePath))));
+                    $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $unoptimizedCodePath))));
 
                     $this->entityManager->persist($issueEntity);
                     $this->entityManager->flush();
@@ -126,15 +127,11 @@ class PopulateDbCommand extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * @param $fileInfo
-     * @return string
-     */
     public function extractPluginnameFromReadme(\SplFileInfo $fileInfo): string
     {
-        $readmeFile = $fileInfo->getPathname() . '/readme.txt';
+        $readmeFile = $fileInfo->getPathname().'/readme.txt';
 
-        if (!is_file($fileInfo->getPathname() . '/readme.txt')) {
+        if (!is_file($fileInfo->getPathname().'/readme.txt')) {
             return $fileInfo->getBasename();
         }
 
@@ -146,16 +143,13 @@ class PopulateDbCommand extends Command
         }
 
         $name = trim($matches[1]);
+
         return $name;
     }
 
-    /**
-     * @param $folderName
-     * @return array
-     */
     public function getPsalmResultsArray($folderName): array
     {
-        $psalmResultFile = $this->projectDir . DIRECTORY_SEPARATOR . 'data/wordpress/results' . DIRECTORY_SEPARATOR . $folderName . '.txt';
+        $psalmResultFile = $this->projectDir.DIRECTORY_SEPARATOR.'data/wordpress/results'.DIRECTORY_SEPARATOR.$folderName.'.txt';
         $text = file_get_contents($psalmResultFile);
 
         // Remove the psalm footer section
@@ -170,13 +164,12 @@ class PopulateDbCommand extends Command
             $errors[] = [
                 'errorType' => $match[1],
                 'errorId' => TaintTypes::getIdByName($match[1]),
-                'file' => $match[2] . ':' . $match[3],
+                'file' => $match[2].':'.$match[3],
                 'description' => $match[4],
-                'content' => $match[5]
+                'content' => $match[5],
             ];
         }
 
         return $errors;
     }
-
 }

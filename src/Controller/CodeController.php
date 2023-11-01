@@ -69,7 +69,7 @@ class CodeController extends AbstractController
     #[Route('/{id}', name: 'app_code_delete', methods: ['POST'])]
     public function delete(Request $request, Code $code, CodeRepository $codeRepository): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $code->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete'.$code->getId(), $request->request->get('_token'))) {
             $codeRepository->remove($code, true);
         }
 

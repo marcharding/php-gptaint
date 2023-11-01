@@ -14,7 +14,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ExtractWordpressPluginsCommand extends Command
 {
-
     private $projectDir;
 
     public function __construct($projectDir)
@@ -37,16 +36,16 @@ class ExtractWordpressPluginsCommand extends Command
 
         $count = 0;
         foreach ($zips as $zip) {
-
             if ($count === 10) {
-                while (pcntl_waitpid(0, $status) != -1) ;
+                while (pcntl_waitpid(0, $status) != -1);
                 $count = 0;
             }
 
             $pid = pcntl_fork();
 
             if ($pid == -1) {
-                $io->error("Could not fork");
+                $io->error('Could not fork');
+
                 return Command::FAILURE;
             } elseif ($pid == 0) {
                 $io->writeln("Extracting $zip");
@@ -56,9 +55,8 @@ class ExtractWordpressPluginsCommand extends Command
             $count++;
         }
 
-        while (pcntl_waitpid(0, $status) != -1) ;
+        while (pcntl_waitpid(0, $status) != -1);
 
         return Command::SUCCESS;
     }
-
 }

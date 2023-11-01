@@ -28,11 +28,10 @@ class NodeLineNumberMatchingVisitor extends NodeVisitorAbstract
         $endLine = $node->getEndLine();
 
         if ($startLine >= $this->lineNumber && $endLine <= $this->lineNumber) {
-
             if ($this->currentDepth > $this->maxDepth) {
                 $this->maxDepth = $this->currentDepth;
                 $node->setAttribute('comments', [
-                    new Comment(sprintf("%s Possible taint after this comment", NodeLineNumberMatchingVisitor::COMMENT_PREFIX))
+                    new Comment(sprintf('%s Possible taint after this comment', NodeLineNumberMatchingVisitor::COMMENT_PREFIX)),
                 ]);
                 $this->node = $node;
             }

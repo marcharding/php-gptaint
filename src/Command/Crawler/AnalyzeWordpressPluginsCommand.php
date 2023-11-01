@@ -14,7 +14,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class AnalyzeWordpressPluginsCommand extends Command
 {
-
     private $projectDir;
 
     public function __construct($projectDir)
@@ -63,7 +62,6 @@ EOT;
         $plugins = glob("$folder/*");
 
         foreach ($plugins as $plugin) {
-
             $pluginName = basename($plugin);
             if (is_file("$resultsDir/$pluginName.sarif")) {
                 continue;
@@ -106,15 +104,15 @@ EOT;
 
             file_put_contents("{$resultsDir}/$pluginName.txt", implode(PHP_EOL, $resultOrg));
 
-            $results = dirname($resultsDir) . "/_results.txt";
-            file_put_contents($results, '###########################################################' . PHP_EOL, FILE_APPEND);
-            file_put_contents($results, $pluginName . PHP_EOL, FILE_APPEND);
-            file_put_contents($results, '###########################################################' . PHP_EOL, FILE_APPEND);
+            $results = dirname($resultsDir).'/_results.txt';
+            file_put_contents($results, '###########################################################'.PHP_EOL, FILE_APPEND);
+            file_put_contents($results, $pluginName.PHP_EOL, FILE_APPEND);
+            file_put_contents($results, '###########################################################'.PHP_EOL, FILE_APPEND);
             file_put_contents($results, PHP_EOL, FILE_APPEND);
-            file_put_contents($results, "Total Errors: " . count($result), FILE_APPEND);
+            file_put_contents($results, 'Total Errors: '.count($result), FILE_APPEND);
             file_put_contents($results, PHP_EOL, FILE_APPEND);
             foreach ($types as $type => $count) {
-                file_put_contents($results, "$type: " . $count . PHP_EOL, FILE_APPEND);
+                file_put_contents($results, "$type: ".$count.PHP_EOL, FILE_APPEND);
             }
             file_put_contents($results, PHP_EOL, FILE_APPEND);
             file_put_contents($results, PHP_EOL, FILE_APPEND);
@@ -126,11 +124,8 @@ EOT;
             } else {
                 $io->block("Plugin '$pluginName' seems untained", 'INFO', 'fg=green', ' ', false);
             }
-
         }
 
         return Command::SUCCESS;
-
     }
-
 }

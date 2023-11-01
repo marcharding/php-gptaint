@@ -21,6 +21,7 @@ class Issue
 
     /**
      * @ORM\ManyToOne(targetEntity="Issue")
+     *
      * @ORM\JoinColumn(name="issue_id", referencedColumnName="id")
      */
     private $issue;
@@ -33,7 +34,7 @@ class Issue
     private ?Code $code = null;
 
     #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]
-    #[ORM\OrderBy(["id" => "DESC"])]
+    #[ORM\OrderBy(['id' => 'DESC'])]
     private Collection $gptResults;
 
     #[ORM\Column(length: 255)]
@@ -204,16 +205,15 @@ class Issue
 
     public function probabilityAverage(): int
     {
-        if(!$this->getGptResults()){
+        if (!$this->getGptResults()) {
             return 0;
         }
 
         $probabilityAverage = 0;
         foreach ($this->getGptResults() as $gptResult) {
-            $probabilityAverage+= $gptResult->getExploitProbability();
+            $probabilityAverage += $gptResult->getExploitProbability();
         }
 
         return $probabilityAverage / count($this->getGptResults());
     }
-
 }

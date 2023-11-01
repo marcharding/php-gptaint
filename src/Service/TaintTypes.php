@@ -2,31 +2,29 @@
 
 namespace App\Service;
 
-use ReflectionClass;
-
 class TaintTypes
 {
-    const TaintedCallable = 243;
-    const TaintedCookie = 257;
-    const TaintedCustom = 249;
-    const TaintedEval = 252;
-    const TaintedFile = 255;
-    const TaintedHeader = 256;
-    const TaintedHtml = 245;
-    const TaintedInclude = 251;
-    const TaintedLdap = 254;
-    const TaintedSSRF = 253;
-    const TaintedShell = 246;
-    const TaintedSql = 244;
-    const TaintedSystemSecret = 248;
-    const TaintedTextWithQuotes = 274;
-    const TaintedUnserialize = 250;
-    const TaintedUserSecret = 247;
+    public const TaintedCallable = 243;
+    public const TaintedCookie = 257;
+    public const TaintedCustom = 249;
+    public const TaintedEval = 252;
+    public const TaintedFile = 255;
+    public const TaintedHeader = 256;
+    public const TaintedHtml = 245;
+    public const TaintedInclude = 251;
+    public const TaintedLdap = 254;
+    public const TaintedSSRF = 253;
+    public const TaintedShell = 246;
+    public const TaintedSql = 244;
+    public const TaintedSystemSecret = 248;
+    public const TaintedTextWithQuotes = 274;
+    public const TaintedUnserialize = 250;
+    public const TaintedUserSecret = 247;
 
     public static function getIdByName($issueId)
     {
-        if (defined('self::' . $issueId)) {
-            return constant('self::' . $issueId);
+        if (defined('self::'.$issueId)) {
+            return constant('self::'.$issueId);
         } else {
             return null;
         }
@@ -42,8 +40,8 @@ class TaintTypes
 
     public static function getConstants()
     {
-        $oClass = new ReflectionClass(__CLASS__);
+        $oClass = new \ReflectionClass(__CLASS__);
+
         return $oClass->getConstants();
     }
-
 }

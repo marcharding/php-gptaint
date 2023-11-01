@@ -17,7 +17,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class DownloadWordpressPluginsCommand extends Command
 {
-
     private $projectDir;
 
     public function __construct($projectDir)
@@ -38,14 +37,15 @@ class DownloadWordpressPluginsCommand extends Command
 
         $client = new Client([
             'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
-            ]
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
+            ],
         ]);
 
         $requests = function ($pages, $resultsPerPage = 250) use ($client, $io) {
             foreach ($pages as $page) {
                 yield function () use ($client, $page, $resultsPerPage, $io) {
                     $io->writeln("Crawling page $page with $resultsPerPage results per page");
+
                     return $client->getAsync("https://api.wordpress.org/plugins/info/1.2/?action=query_plugins&request[page]={$page}&request[per_page]={$resultsPerPage}");
                 };
             }
@@ -57,8 +57,7 @@ class DownloadWordpressPluginsCommand extends Command
             'concurrency' => 10,
             'fulfilled' => function ($response, $index) use (&$results) {
                 $json = json_decode($response->getBody(), true);
-                foreach ($json["plugins"] as $entry) {
-
+                foreach ($json['plugins'] as $entry) {
                     // only download plugins with at least 5000 installations
                     if ($entry['downloaded'] < 5000) {
                         continue;
@@ -75,7 +74,7 @@ class DownloadWordpressPluginsCommand extends Command
                 }
             },
             'rejected' => function (RequestException $reason, $index) use ($io) {
-                $io->error("Request failed for index $index: " . $reason->getMessage());
+                $io->error("Request failed for index $index: ".$reason->getMessage());
             },
         ]);
 
@@ -98,7 +97,7 @@ class DownloadWordpressPluginsCommand extends Command
                 file_put_contents("$downloadFolder/$filename", $response->getBody());
             },
             'rejected' => function ($reason, $index) use ($io) {
-                $io->error("Request failed for index $index: " . $reason->getMessage());
+                $io->error("Request failed for index $index: ".$reason->getMessage());
             },
         ]);
 
@@ -107,5 +106,4 @@ class DownloadWordpressPluginsCommand extends Command
 
         return Command::SUCCESS;
     }
-
 }
