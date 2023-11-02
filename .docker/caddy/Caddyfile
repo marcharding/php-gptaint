@@ -1,0 +1,25 @@
+# see https://caddyserver.com/docs/caddyfile/options#name, https://github.com/caddyserver/caddy/issues/5602
+{
+    auto_https disable_redirects
+
+	servers :443 {
+		name https
+	}
+
+	servers :80 {
+		name http
+	}
+}
+
+# hostnames
+adminer.localhost:80 {
+	reverse_proxy adminer:8080
+}
+
+php-gptaint.localhost:80 {
+	reverse_proxy webserver-app:80
+}
+
+wp.localhost:80 {
+	reverse_proxy webserver-wordpress:80
+}

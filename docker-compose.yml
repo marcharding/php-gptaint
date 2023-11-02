@@ -1,21 +1,44 @@
-version: '3'
-
+version: "3.8"
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-15}-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
-
-volumes:
-###> doctrine/doctrine-bundle ###
-  database_data:
-###< doctrine/doctrine-bundle ###
+    db_wordpress:
+        image: mysql:8.0
+        container_name: db-wordpress
+        environment:
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+            MYSQL_DATABASE: wordpress
+            MYSQL_USER: wordpress
+            MYSQL_PASSWORD: wordpress
+        ports:
+            - "6613:3306"
+    db_app:
+        image: mysql:8.0
+        container_name: db-app
+        environment:
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+            MYSQL_DATABASE: application
+            MYSQL_USER: application
+            MYSQL_PASSWORD: application
+        ports:
+            - "6612:3306"
+    webserver_app:
+        build: .docker/httpd
+        container_name: webserver-app
+        volumes:
+            - ./sandbox:/var/www/application
+    webserver_wordpress:
+        build: .docker/httpd
+        container_name: webserver-wordpress
+        volumes:
+            - .:/var/www/application
+    adminer:
+        image: adminer
+        container_name: adminer
+    caddy_reverse_proxy:
+        image: caddy
+        container_name: caddy
+        restart: unless-stopped
+        volumes:
+            - .docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+        ports:
+            - "80:80"
+            - "443:443"
