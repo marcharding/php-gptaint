@@ -24,6 +24,9 @@ class Code
     #[ORM\OneToMany(mappedBy: 'code', targetEntity: Issue::class, orphanRemoval: true)]
     private Collection $issues;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $type = null;
+
     public function __construct()
     {
         $this->issues = new ArrayCollection();
@@ -117,5 +120,17 @@ class Code
         }
 
         return $countIssuesOver80;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(?string $type): static
+    {
+        $this->type = $type;
+
+        return $this;
     }
 }

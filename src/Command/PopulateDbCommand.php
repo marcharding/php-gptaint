@@ -77,6 +77,7 @@ class PopulateDbCommand extends Command
                 }
                 $codeEntity->setName($name);
                 $codeEntity->setDirectory($folderName);
+                $codeEntity->setType('wordpressPlugin');
 
                 $this->entityManager->persist($codeEntity);
                 $this->entityManager->flush();
