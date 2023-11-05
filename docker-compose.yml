@@ -24,12 +24,12 @@ services:
         build: .docker/httpd
         container_name: webserver-app
         volumes:
-            - ./sandbox:/var/www/application
+            - .:/var/www/application
     webserver_wordpress:
         build: .docker/httpd
         container_name: webserver-wordpress
         volumes:
-            - .:/var/www/application
+            - ./sandbox:/var/www/application
     adminer:
         image: adminer
         container_name: adminer
