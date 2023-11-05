@@ -45,7 +45,7 @@ class BaseGptMessageHandler
         } while (!($gptResult instanceof GptResult) && $counter <= 3);
 
         if (!($gptResult instanceof GptResult)) {
-            $io->error("ERROR: {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+            $io->error("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
 
             return;
         }
@@ -53,6 +53,6 @@ class BaseGptMessageHandler
         $this->entityManager->persist($gptResult);
         $this->entityManager->flush();
 
-        $io->success("OK: {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+        $io->success("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
     }
 }
