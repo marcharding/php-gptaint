@@ -34,7 +34,12 @@ class BaseGptMessageHandler
         $counter = 0;
         $temperature = 0;
         do {
-            $gptResult = $this->gptQuery->queryGpt($issue, true, $temperature);
+            try {
+                $gptResult = $this->gptQuery->queryGpt($issue, true, $temperature);
+            } catch (\Exception $e) {
+                $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+                return;
+            }
             $temperature = 0.00 + rand(0, 100) * 0.0005;
             $counter++;
         } while (!($gptResult instanceof GptResult) && $counter <= 3);
