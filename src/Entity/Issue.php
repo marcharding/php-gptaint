@@ -30,7 +30,7 @@ class Issue
     private ?string $extractedCodePath = null;
 
     #[ORM\ManyToOne(inversedBy: 'issues')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
     private ?Code $code = null;
 
     #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]

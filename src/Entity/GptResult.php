@@ -18,6 +18,7 @@ class GptResult
     private ?string $response = null;
 
     #[ORM\ManyToOne(inversedBy: 'gptResults')]
+    #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
     private ?Issue $issue = null;
 
     #[ORM\Column]
