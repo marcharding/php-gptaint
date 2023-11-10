@@ -1,23 +1,34 @@
 version: "3.8"
 services:
-    db_wordpress:
-        image: mysql:8.0
-        container_name: db-wordpress
-        environment:
-            MYSQL_ALLOW_EMPTY_PASSWORD: 1
-            MYSQL_DATABASE: wordpress
-            MYSQL_USER: wordpress
-            MYSQL_PASSWORD: wordpress
-        ports:
-            - "6613:3306"
     db_app:
         image: mysql:8.0
-        container_name: db-app
+        command:
+            --key_buffer_size=128M
+            --max_allowed_packet=128M
+            --thread_stack=512K
+            --thread_cache_size=16
+            --max_connections=256
+            --tmp_table_size=128M
+            --innodb_buffer_pool_size=512M
+            --innodb_flush_log_at_trx_commit=2
+            --skip-log-bin
+            --skip-external-locking
+        container_name: database
         environment:
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
-            MYSQL_DATABASE: application
-            MYSQL_USER: application
-            MYSQL_PASSWORD: application
+            MYSQL_USER: root
+        entrypoint: >
+            sh -c "
+              echo 'CREATE DATABASE IF NOT EXISTS application;' > /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE USER \"application\"@\"localhost\" IDENTIFIED BY \"application\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL PRIVILEGES ON application.* TO \"application\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL PRIVILEGES ON application.* TO \"application\"@\"127.0.0.1\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE DATABASE IF NOT EXISTS wordpress;' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE USER \"wordpress\"@\"localhost\" IDENTIFIED BY \"wordpress\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL PRIVILEGES ON wordpress.* TO \"wordpress\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL PRIVILEGES ON wordpress.* TO \"wordpress\"@\"127.0.0.1\";' >> /docker-entrypoint-initdb.d/init.sql;
+              /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+            "
         ports:
             - "6612:3306"
     webserver_app:
