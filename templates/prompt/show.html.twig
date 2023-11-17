@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Issue{% endblock %}
+
+{% block header %}
+
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <h1 class="text-xl font-semibold leading-6 text-gray-900">Prompt</h1>
+    </div>
+
+{% endblock %}
+
+{% block body %}
+
+    <div>
+        <div class="mt-6 border-t border-gray-100">
+            <dl class="divide-y divide-gray-100">
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Issue</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ prompt.id }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Confirmed state</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ prompt.active }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Psalm state</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ prompt.type }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Taint type</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ prompt.prompt|nl2br }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <a href="{{ path('app_prompt_index') }}">back to list</a>
+
+    <a href="{{ path('app_prompt_edit', {'id': prompt.id}) }}">edit</a>
+
+    {{ include('prompt/_delete_form.html.twig') }}
+
+{% endblock %}
