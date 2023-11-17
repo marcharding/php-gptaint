@@ -33,6 +33,10 @@ class GptResult
     #[ORM\Column(length: 255)]
     private ?string $gptVersion = null;
 
+    #[ORM\ManyToOne(inversedBy: 'gptResults')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Prompt $prompt = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -107,4 +111,17 @@ class GptResult
     {
         $this->exploitExample = $exploitExample;
     }
+
+    public function getPrompt(): ?Prompt
+    {
+        return $this->prompt;
+    }
+
+    public function setPrompt(?Prompt $prompt): static
+    {
+        $this->prompt = $prompt;
+
+        return $this;
+    }
+
 }

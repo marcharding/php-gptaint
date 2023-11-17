@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\GptResult;
 use App\Entity\Issue;
+use App\Entity\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenAI;
 use Yethee\Tiktoken\EncoderProvider;
@@ -35,13 +36,14 @@ class GptQuery
 
         // TODO: Store different prompt in database / fixture and also store the prompt with the result to further refine it later on
         $userPrompt = file_get_contents($this->projectDir.'/prompt/0014.md');
+        $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => $issue->getCode()->getType(), 'active' => 1]);
 
         $prompt = [
             'temperature' => $temperature,
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => "$userPrompt $code",
+                    'content' => "{$promptEntity->getPrompt()} $code",
                 ],
             ],
             'functions' => [
@@ -163,6 +165,7 @@ class GptQuery
         $gptResult = new GptResult();
         $gptResult->setIssue($issue);
         $gptResult->setGptVersion($model);
+        $gptResult->setPrompt($promptEntity);
         $gptResult->setResponse($completeResult);
         $gptResult->setAnalysisResult($analysisResult);
         $gptResult->setExploitProbability($exploitProbability);
