@@ -20,6 +20,7 @@ class TaintTypes
     public const TaintedTextWithQuotes = 274;
     public const TaintedUnserialize = 250;
     public const TaintedUserSecret = 247;
+    public const TaintedUnkown = 999;
 
     public static function getIdByName($issueId)
     {
@@ -32,7 +33,7 @@ class TaintTypes
 
     public static function getNameById($issueId)
     {
-        $constants = get_defined_constants(true)['user'];
+        $constants = self::getConstants();
         $constantName = array_search($issueId, $constants);
 
         return $constantName !== false ? $constantName : null;
