@@ -11,6 +11,10 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: IssueRepository::class)]
 class Issue
 {
+    public const StateUnkown = 99;
+    public const StateGood = 0;
+    public const StateBad = 1;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -30,7 +34,7 @@ class Issue
     private ?string $extractedCodePath = null;
 
     #[ORM\ManyToOne(inversedBy: 'issues')]
-    #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Code $code = null;
 
     #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]
@@ -43,7 +47,7 @@ class Issue
     #[ORM\Column(type: Types::TEXT)]
     private ?string $psalmResult = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 8192)]
     private ?string $description = null;
 
     #[ORM\Column(length: 255)]
@@ -54,6 +58,15 @@ class Issue
 
     #[ORM\Column]
     private ?int $estimatedTokensUnoptimized = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $confirmedState = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $psalmState = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $note = null;
 
     public function __construct()
     {
@@ -205,7 +218,7 @@ class Issue
 
     public function probabilityAverage(): int
     {
-        if (!$this->getGptResults()) {
+        if (count($this->getGptResults()) === 0) {
             return 0;
         }
 
@@ -214,6 +227,42 @@ class Issue
             $probabilityAverage += $gptResult->getExploitProbability();
         }
 
-        return $probabilityAverage / count($this->getGptResults());
+        return $probabilityAverage;
+    }
+
+    public function getConfirmedState(): ?int
+    {
+        return $this->confirmedState;
+    }
+
+    public function setConfirmedState(?int $confirmedState): static
+    {
+        $this->confirmedState = $confirmedState;
+
+        return $this;
+    }
+
+    public function getPsalmState(): ?int
+    {
+        return $this->psalmState;
+    }
+
+    public function setPsalmState(?int $psalmState): static
+    {
+        $this->psalmState = $psalmState;
+
+        return $this;
+    }
+
+    public function getNote(): ?string
+    {
+        return $this->note;
+    }
+
+    public function setNote(?string $note): static
+    {
+        $this->note = $note;
+
+        return $this;
     }
 }
