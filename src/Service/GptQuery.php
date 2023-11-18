@@ -27,15 +27,13 @@ class GptQuery
             ->make();
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.00): GptResult|array|false
+    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.00, $modelToUse = 'gpt-3.5-turbo-0613'): GptResult|array|false
     {
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
         $code = $issue->getExtractedCodePath();
 
-        // TODO: Store different prompt in database / fixture and also store the prompt with the result to further refine it later on
-        $userPrompt = file_get_contents($this->projectDir.'/prompt/0014.md');
         $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => $issue->getCode()->getType(), 'active' => 1]);
 
         $prompt = [
@@ -77,18 +75,29 @@ class GptQuery
             unset($prompt['function_call']);
         }
 
-        $numberOfTokens = $issue->getEstimatedTokens() + count($encoder->encode("$userPrompt $code"));
+        $numberOfTokens = $issue->getEstimatedTokens() + count($encoder->encode("$promptEntity->getPrompt() $code"));
 
         if (isset($prompt['functions'])) {
             $numberOfTokens += count($encoder->encode(json_encode($prompt['functions'])));
         }
 
+        $modelMapping = [
+            'gpt-3.5-turbo-0613' => [
+                '4k' => 'gpt-3.5-turbo-0613',
+                '16k' => 'gpt-3.5-turbo-16k-0613',
+            ],
+            'gpt-4-1106-preview' => [
+                '4k' => 'gpt-4-1106-preview',
+                '16k' => 'gpt-4-1106-preview',
+            ],
+        ];
+
         if ($numberOfTokens > 16385) {
             return false;
         } elseif ($numberOfTokens > 4096) {
-            $model = 'gpt-3.5-turbo-16k-0613';
+            $model = $modelMapping[$modelToUse]['1k'];
         } else {
-            $model = 'gpt-3.5-turbo-0613';
+            $model = $modelMapping[$modelToUse]['4k'];
         }
 
         $prompt['model'] = $model;
