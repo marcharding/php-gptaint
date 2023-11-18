@@ -3,7 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\Issue;
-use App\Form\Issue1Type;
+use App\Form\IssueType;
+use App\Repository\GptResultRepository;
 use App\Repository\IssueRepository;
 use App\Service\CodeExtractor\CodeExtractor;
 use App\Service\SarifToFlatArrayConverter;
@@ -61,7 +62,7 @@ class IssueController extends AbstractController
     public function new(Request $request, IssueRepository $issueRepository): Response
     {
         $issue = new Issue();
-        $form = $this->createForm(Issue1Type::class, $issue);
+        $form = $this->createForm(IssueType::class, $issue);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -106,7 +107,7 @@ class IssueController extends AbstractController
     #[Route('/{id}/edit', name: 'app_issue_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Issue $issue, IssueRepository $issueRepository): Response
     {
-        $form = $this->createForm(Issue1Type::class, $issue);
+        $form = $this->createForm(IssueType::class, $issue);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

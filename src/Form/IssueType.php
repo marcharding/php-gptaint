@@ -13,8 +13,10 @@ class IssueType extends AbstractType
     {
         $builder
             ->add('taintId')
-            ->add('sarifResults')
             ->add('extractedCodePath')
+            ->add('type')
+            ->add('psalmResult')
+            ->add('description')
             ->add('code');
     }
 
