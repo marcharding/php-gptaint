@@ -37,6 +37,12 @@ class GptResult
     #[ORM\JoinColumn(nullable: false)]
     private ?Prompt $prompt = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?bool $exploitExampleSuccessful = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $promptMessage = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -120,6 +126,44 @@ class GptResult
     public function setPrompt(?Prompt $prompt): static
     {
         $this->prompt = $prompt;
+
+        return $this;
+    }
+
+    public function getMessage(): array
+    {
+        return [
+            [
+                'role' => 'user',
+                'content' => "{$this->getPromptMessage()} {$this->getIssue()->getExtractedCodePath()}",
+            ],
+            [
+                'role' => 'assistant',
+                'content' => "{$this->getResponse()}",
+            ],
+        ];
+    }
+
+    public function isExploitExampleSuccessful(): ?bool
+    {
+        return $this->exploitExampleSuccessful;
+    }
+
+    public function setExploitExampleSuccessful(?bool $exploitExampleSuccessful): static
+    {
+        $this->exploitExampleSuccessful = $exploitExampleSuccessful;
+
+        return $this;
+    }
+
+    public function getPromptMessage(): ?string
+    {
+        return $this->promptMessage;
+    }
+
+    public function setPromptMessage(?string $promptMessage): static
+    {
+        $this->promptMessage = $promptMessage;
 
         return $this;
     }

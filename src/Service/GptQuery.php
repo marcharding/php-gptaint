@@ -27,7 +27,7 @@ class GptQuery
             ->make();
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.00, $modelToUse = 'gpt-3.5-turbo-0613'): GptResult|array|false
+    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.00, $modelToUse = 'gpt-3.5-turbo-0613', $messages = [], $additionalFunctions = []): GptResult|array
     {
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
@@ -35,13 +35,13 @@ class GptQuery
         $code = $issue->getExtractedCodePath();
 
         $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => $issue->getCode()->getType(), 'active' => 1]);
-
+        $promptMessage = $promptEntity->getPrompt();
         $prompt = [
             'temperature' => $temperature,
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => "{$promptEntity->getPrompt()} $code",
+                    'content' => "$promptMessage $code",
                 ],
             ],
             'functions' => [
@@ -70,12 +70,21 @@ class GptQuery
             'function_call' => ['name' => 'provide_analysis_result'],
         ];
 
+        if (!empty($additionalFunctions)) {
+            $prompt['functions'][0]['parameters']['properties'] += $additionalFunctions;
+        }
+
+        if (!empty($messages)) {
+            $prompt['messages'] = $messages;
+            $promptMessage = end($messages)['content'];
+        }
+
         if ($functionCall === false) {
             unset($prompt['functions']);
             unset($prompt['function_call']);
         }
 
-        $numberOfTokens = $issue->getEstimatedTokens() + count($encoder->encode("$promptEntity->getPrompt() $code"));
+        $numberOfTokens = $issue->getEstimatedTokens() + count($encoder->encode(json_encode($prompt['messages'])));
 
         if (isset($prompt['functions'])) {
             $numberOfTokens += count($encoder->encode(json_encode($prompt['functions'])));
@@ -95,7 +104,7 @@ class GptQuery
         if ($numberOfTokens > 16385) {
             return false;
         } elseif ($numberOfTokens > 4096) {
-            $model = $modelMapping[$modelToUse]['1k'];
+            $model = $modelMapping[$modelToUse]['16k'];
         } else {
             $model = $modelMapping[$modelToUse]['4k'];
         }
@@ -112,14 +121,16 @@ class GptQuery
 
             // TODO: Is this the best we can do?
             $json = json_decode($jsonString, true);
+
             if ($json === null) {
-                $pattern = '#"analysisResult":\s*"(?P<analysisResult>.*?)",\s*"exploitProbability":\s*(?P<exploitProbability>\d+),\s*"exploitExample":\s*"(?P<exploitExample>.*?)"#ism';
+                $pattern = '#"analysisResult":\s*"(?P<analysisResult>.*?)",\s*"exploitProbability":\s*(?P<exploitProbability>\d+),\s*"exploitExample":\s*"(?P<exploitExample>.*?)"(,\s*"exploitSuccessful":\s*"(?P<exploitSuccessful>.*?)")?#ism';
                 $matches = [];
                 if (preg_match($pattern, $jsonString, $matches)) {
                     $json = [
                         'analysisResult' => $matches['analysisResult'],
                         'exploitProbability' => (int) $matches['exploitProbability'],
                         'exploitExample' => $matches['exploitExample'] ?? 'Could not get exploit example',
+                        'exploitSuccessful' => $matches['exploitSuccessful'] ?? false,
                     ];
                 }
             }
@@ -140,6 +151,7 @@ class GptQuery
 
             $completeResult = $json['analysisResult'] ?? 'Could not get analysis result';
             $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
+            $exploitSuccessful = $json['exploitSuccessful'] ?? false;
         }
 
         if ($json === false) {
@@ -152,6 +164,7 @@ class GptQuery
                 $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
                 $exploitProbability = $json['exploitProbability'] ?? null;
                 $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
+                $exploitSuccessful = $json['exploitSuccessful'] ?? false;
             }
             $completeResult = $result->message->content;
         }
