@@ -98,7 +98,7 @@ class GptTaintFeedbackCommand extends Command
         $counter = 0;
         do {
             try {
-                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, 'gpt-3.5-turbo-0613', $messages, $additionalFunctions);
+                $gptResult = $this->gptQuery->queryGpt($issue, true, 0.33, 'gpt-4-1106-preview', $messages, $additionalFunctions);
             } catch (\Exception $e) {
                 $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
 
@@ -161,7 +161,7 @@ Your example exploit, which you can find at the end of this message after "# Exe
 
 Adjust and improve or confirm example exploit based on the response if sandbox.
  
-Improve the example exploit based on the response of the sandbox. Use the syntax errors in the response to guess what must be changed about the exploit to make it work.
+Improve the example exploit based on the response of the sandbox. Use the syntax errors in the response to guess what must be changed (escaping, move single or double colons etc.) about the exploit to make it work.
 
 Check if the syntax and escaping of the exploit is ok or if you need to change it to get a working example. Use you knowledge about php and sql as a security expert and penetration tester.
 
@@ -169,9 +169,9 @@ Try to create a real exploit (data extraction, working sql injection, xss, etc.)
 
 Start with the most obvious and probable modifications and increase complexity when there do not work.
 
-Very important and critical is that you, under no circumstances, return the current or one of the previous executed example exploit again without major modifications, that would be wasteful and dumb! 
+Very important and critical is that you, under no circumstances, return the current or one of the previous executed example exploit again without major modifications! 
 
-When the previous exploit example performed better (e.g. a blank response of the sandbox is worse than a response with an error) than base your refined example exploit of the previous better performing exploit.
+When the previous exploit example performed better (e.g. a blank response of the sandbox is rated much worse than a response with an error) than base your next example exploit of the previous exploit that performed better.
 
 The example exploit must be a curl request.
 
@@ -183,8 +183,8 @@ JSON: {
 'analysisResult': 'DETAILED_ANALYSIS_RESULT',
 'exploitProbability': 'PROBABILITY_AS_INTEGER_0-100', 
 'exploitExample': 'EXPLOIT_EXAMPLE_WITH_CURL', 
-'exploitSuccessful': 'Given the response of the sandbox, return if the exploit successful as a boolean value. Only return true if not just an error message or syntax error was return?',
-'exploitSeeminglySuccessful':  'Given the response of the sandbox, return if the exploit was successfull, e.g. triggerd some kind of unhandelt error response or exception.'
+'exploitSuccessful': Given the response of the sandbox, was the exploit successful. Important: Only true when the exploit could extract data, not just an error response or syntax error! An empty response or just and syntax error is not an successful Exploit!',
+'exploitSeeminglySuccessful': 'Given the response of the sandbox, was the exploit successful, e.g. syntax error or similar.'
  }.
  
 # Executed example exploit:
@@ -206,7 +206,7 @@ EOT;
             $functions = [
                 'exploitSuccessful' => [
                     'type' => 'boolean',
-                    'description' => 'Given the response of the sandbox, was the exploit successful. Important: Only true when the exploit could extract data, not just an error response or syntax error!',
+                    'description' => 'Given the response of the sandbox, was the exploit successful. Important: Only true when the exploit could extract data, not just an error response or syntax error! An empty response or just and syntax error is not an successful Exploit!',
                 ],
                 'exploitSeeminglySuccessful' => [
                     'type' => 'boolean',
