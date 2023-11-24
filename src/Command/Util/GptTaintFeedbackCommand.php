@@ -98,7 +98,7 @@ class GptTaintFeedbackCommand extends Command
         $counter = 0;
         do {
             try {
-                $gptResult = $this->gptQuery->queryGpt($issue, true, 0.33, 'gpt-4-1106-preview', $messages, $additionalFunctions);
+                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, 'gpt-4-1106-preview', $messages, $additionalFunctions);
             } catch (\Exception $e) {
                 $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
 
@@ -161,7 +161,7 @@ Your example exploit, which you can find at the end of this message after "# Exe
 
 Adjust and improve or confirm example exploit based on the response if sandbox.
  
-Improve the example exploit based on the response of the sandbox. Use the syntax errors in the response to guess what must be changed (escaping, move single or double colons etc.) about the exploit to make it work.
+Improve the example exploit based on the response of the sandbox. Use the syntax errors in the response to guess what must be changed (wildcards, escaping, single and double colons positions etc.) about the exploit to make it work.
 
 Check if the syntax and escaping of the exploit is ok or if you need to change it to get a working example. Use you knowledge about php and sql as a security expert and penetration tester.
 
