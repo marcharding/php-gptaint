@@ -36,6 +36,13 @@ services:
         container_name: webserver-app
         volumes:
             - .:/var/www/application
+        command:
+            - /bin/sh
+            - -c
+            - |
+                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) database" >> /etc/hosts
+                echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) example.com" >> /etc/hosts
+                apache2-foreground
     webserver_wordpress:
         build: .docker/httpd
         container_name: webserver-wordpress
