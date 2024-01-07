@@ -105,7 +105,7 @@ class GptTaintFeedbackCommand extends Command
                 return false;
             }
             $counter++;
-        } while (!($gptResult instanceof GptResult) && $counter <= 3);
+        } while (!($gptResult instanceof GptResult) && $counter <= 5);
 
         if (!($gptResult instanceof GptResult)) {
             $io->error("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
