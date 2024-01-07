@@ -16,17 +16,16 @@ services:
         container_name: database
         environment:
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
-            MYSQL_USER: root
         entrypoint: >
             sh -c "
               echo 'CREATE DATABASE IF NOT EXISTS application;' > /docker-entrypoint-initdb.d/init.sql;
-              echo 'CREATE USER \"application\"@\"localhost\" IDENTIFIED BY \"application\";' >> /docker-entrypoint-initdb.d/init.sql;
-              echo 'GRANT ALL PRIVILEGES ON application.* TO \"application\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
-              echo 'GRANT ALL PRIVILEGES ON application.* TO \"application\"@\"127.0.0.1\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE USER IF NOT EXISTS \"application\"@\"localhost\" IDENTIFIED BY \"application\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL ON application.* TO \"application\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'CREATE DATABASE IF NOT EXISTS wordpress;' >> /docker-entrypoint-initdb.d/init.sql;
-              echo 'CREATE USER \"wordpress\"@\"localhost\" IDENTIFIED BY \"wordpress\";' >> /docker-entrypoint-initdb.d/init.sql;
-              echo 'GRANT ALL PRIVILEGES ON wordpress.* TO \"wordpress\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
-              echo 'GRANT ALL PRIVILEGES ON wordpress.* TO \"wordpress\"@\"127.0.0.1\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE USER IF NOT EXISTS \"wordpress\"@\"localhost\" IDENTIFIED BY \"wordpress\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL ON wordpress.* TO \"wordpress\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'FLUSH PRIVILEGES;' >> /docker-entrypoint-initdb.d/init.sql;
+
               /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
             "
         ports:
@@ -41,6 +40,9 @@ services:
             - -c
             - |
                 echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) database" >> /etc/hosts
+                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) mysql" >> /etc/hosts
+                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) sandbox" >> /etc/hosts
+                echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) sandbox.com" >> /etc/hosts
                 echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) example.com" >> /etc/hosts
                 apache2-foreground
     webserver_wordpress:
@@ -48,6 +50,16 @@ services:
         container_name: webserver-wordpress
         volumes:
             - ./sandbox:/var/www/application
+        command:
+            - /bin/sh
+            - -c
+            - |
+                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) database" >> /etc/hosts
+                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) mysql" >> /etc/hosts
+                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) sandbox" >> /etc/hosts
+                echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) sandbox.com" >> /etc/hosts
+                echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) example.com" >> /etc/hosts
+                apache2-foreground
     adminer:
         image: adminer
         container_name: adminer

@@ -127,14 +127,12 @@ class GptTaintFeedbackCommand extends Command
         $filesystem = new Filesystem();
         $filesystem->copy($sourceFile, $targetFile, true);
 
-        // TODO: required patches (mysql hostname) to make the samples more "useable", probably fix this otherwise
-        $searchReplace = [
-            '"mysql"' => '"database"',
-            'host=mysql' => 'host=database',
-        ];
-        $targetFileContent = str_replace(array_keys($searchReplace), array_values($searchReplace), file_get_contents($targetFile));
-        $targetFileContent = preg_replace('#<!--(.*?)-->#ism', '', $targetFileContent);
-        file_put_contents($targetFile, $targetFileContent);
+        // setup mysql databse
+        $sqlFile = "{$this->projectDir}/data/nist/samples_selection/2022-05-12-php-test-suite-sqli-v1-0-0/{$issue->getCode()->getDirectory()}/init.sql";
+        if (is_file($sqlFile)) {
+            system("mysql -hmysql -uroot -e 'DROP DATABASE myDB;'");
+            system("mysql -hmysql -uroot < {$sqlFile}");
+        }
 
         $process = Process::fromShellCommandline($gptResult->getExploitExample());
         $process->run();
