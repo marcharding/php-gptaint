@@ -6,25 +6,22 @@ use App\Entity\GptResult;
 use App\Entity\Issue;
 use App\Entity\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
-use OpenAI;
 use Yethee\Tiktoken\EncoderProvider;
 
 class GptQuery
 {
     protected EntityManagerInterface $entityManager;
-    protected OpenAI\Client $openAiClient;
 
     protected string $projectDir;
+    protected string $openAiToken;
+    private string $defaultModel;
 
-    public function __construct(string $projectDir, $openAiToken, $defaultModel, EntityManagerInterface $entityManager)
+    public function __construct(string $projectDir, string $openAiToken, string $defaultModel, EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
         $this->defaultModel = $defaultModel;
-        $this->openAiClient = \OpenAI::factory()
-            ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
-            ->withApiKey($openAiToken)
-            ->make();
+        $this->openAiToken = $openAiToken;
     }
 
     public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $modelToUse = null, $messages = [], $additionalFunctions = []): GptResult|array
@@ -32,6 +29,16 @@ class GptQuery
         if (!isset($modelToUse)) {
             $modelToUse = $this->defaultModel;
         }
+
+        $openAiClient = \OpenAI::factory()
+            ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
+            ->withApiKey($this->openAiToken);
+
+        if ($modelToUse === 'llama.cpp') {
+            $openAiClient->withBaseUri('http://host.docker.internal:8080/v1');
+        }
+
+        $openAiClient = $openAiClient->make();
 
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
@@ -103,6 +110,10 @@ class GptQuery
                 '4k' => 'gpt-4-1106-preview',
                 '16k' => 'gpt-4-1106-preview',
             ],
+            'llama.cpp' => [
+                '4k' => 'llama.cpp',
+                '16k' => 'llama.cpp',
+            ],
         ];
 
         if ($numberOfTokens > 16385) {
@@ -115,7 +126,13 @@ class GptQuery
 
         $prompt['model'] = $model;
 
-        $response = $this->openAiClient->chat()->create($prompt);
+        if ($model === 'llama.cpp') {
+            $prompt['grammar'] = file_get_contents("{$this->projectDir}/config/grammar/jsonStructure.gbnf");
+            unset($prompt['functions']);
+            unset($prompt['function_call']);
+        }
+
+        $response = $openAiClient->chat()->create($prompt);
         $result = $response->choices[0];
 
         $json = false;
@@ -144,7 +161,6 @@ class GptQuery
 
             // TODO: Sometime some values are not set in the json response, try to get them via regex
             // TODO: Refactor this into a better regex and reuseable function
-
             if (!isset($json['exploitProbability'])) {
                 $pattern = '#(?<exploitProbability>\d+)?(%)#ism';
                 $matches = [];
@@ -181,6 +197,16 @@ class GptQuery
                 $exploitProbability = intval($matches[1]);
             }
             $completeResult = $result->message->content;
+        }
+
+        if (empty($json)) {
+            $json = json_decode(str_replace(",\n", ',', $result->message->content), true);
+            if ($json !== false) {
+                $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
+                $exploitProbability = $json['exploitProbability'] ?? null;
+                $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
+                $exploitSuccessful = $json['exploitSuccessful'] ?? false;
+            }
         }
 
         if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)) {
