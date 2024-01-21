@@ -218,10 +218,12 @@ class GptQuery
         $gptResult->setIssue($issue);
         $gptResult->setGptVersion($model);
         $gptResult->setPrompt($promptEntity);
+        $gptResult->setPromptMessage($promptMessage);
         $gptResult->setResponse($completeResult);
         $gptResult->setAnalysisResult($analysisResult);
         $gptResult->setExploitProbability($exploitProbability);
         $gptResult->setExploitExample($exploitExample);
+        $gptResult->setExploitExampleSuccessful($exploitSuccessful ?? false);
 
         return $gptResult;
     }
