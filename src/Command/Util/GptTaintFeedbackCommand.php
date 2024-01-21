@@ -202,7 +202,7 @@ Very Important: Ensure to return your analysis result and the likelihood of expl
 JSON: {
 'analysisResult': 'DETAILED_ANALYSIS_RESULT',
 'exploitProbability': 'PROBABILITY_AS_INTEGER_0-100', 
-'exploitExample': 'EXPLOIT_EXAMPLE_WITH_CURL', 
+'exploitExample': 'EXPLOIT_EXAMPLE_WITH_CURL (Only the curl command, no additional text!)', 
 'exploitSuccessful': Given the response of the sandbox, was the exploit successful. Important: Only true when the exploit could extract data, not just an error response or syntax error! An empty response or just and syntax error is not an successful Exploit!',
 'exploitSeeminglySuccessful': 'Given the response of the sandbox, was the exploit successful, e.g. syntax error or similar.'
  }.
