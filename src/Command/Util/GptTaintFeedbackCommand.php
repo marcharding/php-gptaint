@@ -96,7 +96,7 @@ class GptTaintFeedbackCommand extends Command
         $counter = 0;
         do {
             try {
-                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, 'gpt-4-1106-preview', $messages, $additionalFunctions);
+                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, null, $messages, $additionalFunctions);
             } catch (\Exception $e) {
                 $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
 

@@ -16,19 +16,23 @@ class GptQuery
 
     protected string $projectDir;
 
-    public function __construct(string $projectDir, $openAiToken, EntityManagerInterface $entityManager)
+    public function __construct(string $projectDir, $openAiToken, $defaultModel, EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
-        $this->openAiClient = \OpenAI::client($openAiToken);
+        $this->defaultModel = $defaultModel;
         $this->openAiClient = \OpenAI::factory()
             ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
             ->withApiKey($openAiToken)
             ->make();
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.00, $modelToUse = 'gpt-3.5-turbo-0613', $messages = [], $additionalFunctions = []): GptResult|array
+    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $modelToUse = null, $messages = [], $additionalFunctions = []): GptResult|array
     {
+        if (!isset($modelToUse)) {
+            $modelToUse = $this->defaultModel;
+        }
+
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
