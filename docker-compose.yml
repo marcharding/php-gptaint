@@ -50,6 +50,7 @@ services:
         container_name: webserver-wordpress
         volumes:
             - ./sandbox:/var/www/application
+            - ./db:/var/www/db
         command:
             - /bin/sh
             - -c
