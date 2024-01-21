@@ -23,3 +23,7 @@ php-gptaint.localhost:80 {
 wp.localhost:80 {
 	reverse_proxy webserver-wordpress:80
 }
+
+example.com:80 {
+	reverse_proxy webserver-wordpress:80
+}

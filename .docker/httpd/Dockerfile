@@ -29,7 +29,8 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libxml2-dev \
-    libxslt1-dev
+    libxslt1-dev \
+    sqlite3
 
 # Configure and install the GD extension
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install gd
