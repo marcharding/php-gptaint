@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Process\Process;
 
 #[AsCommand(
@@ -118,17 +119,41 @@ class GptTaintFeedbackCommand extends Command
 
     public function setupSandbox($issue, $gptResult)
     {
-        $sourceFile = "{$this->projectDir}/data/nist/samples_selection/2022-05-12-php-test-suite-sqli-v1-0-0/{$issue->getCode()->getDirectory()}/src/sample.php";
+        // get source directory of sample
+        $finder = new Finder();
+        $sourceDirectories = $finder->files()->in("{$this->projectDir}/data/nist/samples_selection")->directories()->name($issue->getCode()->getDirectory())->getIterator();
+        $sourceDirectories->rewind();
+        $sourceDirectory = $sourceDirectories->current()->getRealPath();
+
+        // find sample files (named index.php or sample.php)
+        $finder = new Finder();
+        $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php'])->getIterator();
+        $sourceFiles->rewind();
+        $sourceFile = $sourceFiles->current()->getRealPath();
+
+        // rename to index.php for easier prompt and more consistent results
         $targetFile = "{$this->projectDir}/sandbox/public/index.php";
 
         $filesystem = new Filesystem();
         $filesystem->copy($sourceFile, $targetFile, true);
 
-        // setup mysql databse
-        $sqlFile = "{$this->projectDir}/data/nist/samples_selection/2022-05-12-php-test-suite-sqli-v1-0-0/{$issue->getCode()->getDirectory()}/init.sql";
+        // remove comments
+        $targetFileContent = preg_replace('#<!--(.*?)-->#ism', '', file_get_contents($targetFile));
+        file_put_contents($targetFile, $targetFileContent);
+
+        // setup mysql database
+        $sqlFile = "{$sourceDirectory}/init.sql";
         if (is_file($sqlFile)) {
-            system("mysql -hmysql -uroot -e 'DROP DATABASE myDB;'");
-            system("mysql -hmysql -uroot < {$sqlFile}");
+            $dockerfile = file_get_contents("{$sourceDirectory}/Dockerfile");
+            if (strpos($dockerfile, 'sqlite3') !== false) {
+                if (is_file("{$this->projectDir}/db/database.db")) {
+                    unlink("{$this->projectDir}/db/database.db");
+                }
+                system("sqlite3 -init $sqlFile {$this->projectDir}/db/database.db '.exit'");
+            } else {
+                system("mysql -hmysql -uroot -e 'DROP DATABASE IF EXISTS myDB;'");
+                system("mysql -hmysql -uroot < {$sqlFile}");
+            }
         }
 
         $process = Process::fromShellCommandline($gptResult->getExploitExample());
