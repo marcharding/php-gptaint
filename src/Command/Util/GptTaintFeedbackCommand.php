@@ -58,7 +58,7 @@ class GptTaintFeedbackCommand extends Command
         $io->block(PHP_EOL.PHP_EOL.$issue->getCode()->getIssues()->first()->getExtractedCodePath().PHP_EOL, 'CODE', 'fg=white', '# ');
 
         $io->block('Starting initial analysis.', 'INFO', 'fg=gray', '# ');
-        sleep(1);
+
         $gptResultId = (int) $input->getArgument('gptResultId');
         if ($gptResultId) {
             $gptResult = $this->entityManager->getRepository(GptResult::class)->find($gptResultId);
@@ -71,7 +71,7 @@ class GptTaintFeedbackCommand extends Command
         $io->block($gptResult->getAnalysisResult(), 'ANALYSIS RESULT', 'fg=white', '# ');
 
         $io->block($gptResult->getExploitExample(), 'EXPLOIT', 'fg=white', '# ');
-        sleep(1);
+
         $io->block('Starting feedback loop.', 'INFO', 'fg=gray', '# ');
 
         $result = $this->startFeedbackLoop($io, $issue, $gptResult, $previousMessages = []);
@@ -91,9 +91,6 @@ class GptTaintFeedbackCommand extends Command
             $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user'));
             $io->block("Refine or confirm (Iteration {$numberOfUserMessage}) for '{$issue->getCode()->getName()}/{$issue->getCode()->getId()}", 'GPT', 'fg=gray', '# ');
         }
-
-        // 'gpt-4-1106-preview'
-        // 'gpt-3.5-turbo-0613'
 
         $counter = 0;
         do {
@@ -225,11 +222,12 @@ EOT;
             ];
         }
 
-        // remove the last message because we already added it above   $messages[] = [
-        //                'role' => 'user',
-        //                'content' => $prompt,
-        //            ];
-        // and will add exactly this message again, wehen adding it from the gptMessage in the next lookup
+        // remove the last message because we already added it above
+        //   $messages[] = [
+        //       'role' => 'user',
+        //       'content' => $prompt,
+        //   ];
+        // and will add exactly this message again, when adding it from the gptMessage in the next lookup
         array_pop($messages);
 
         return $this->startFeedbackLoop($io, $issue, $gptResult, $messages);
