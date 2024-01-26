@@ -24,8 +24,10 @@ services:
               echo 'CREATE DATABASE IF NOT EXISTS wordpress;' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'CREATE USER IF NOT EXISTS \"wordpress\"@\"localhost\" IDENTIFIED BY \"wordpress\";' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'GRANT ALL ON wordpress.* TO \"wordpress\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE DATABASE IF NOT EXISTS myDB;' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE USER IF NOT EXISTS \"username\"@\"localhost\" IDENTIFIED BY \"password\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL ON myDB.* TO \"username\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'FLUSH PRIVILEGES;' >> /docker-entrypoint-initdb.d/init.sql;
-
               /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
             "
         ports:
