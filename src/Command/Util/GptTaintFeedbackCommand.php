@@ -118,7 +118,7 @@ class GptTaintFeedbackCommand extends Command
         $io->block(trim($result['sandboxResult']));
     }
 
-    public function gptQuery($io, $issue, $messages = [], $additionalFunctions = [])
+    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [])
     {
         if (empty($messages)) {
             $io->block("Starting analysis '{$issue->getCode()->getName()}/{$issue->getCode()->getId()}", 'GPT', 'fg=gray', '# ');
@@ -272,7 +272,7 @@ EOT;
 
         $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user'));
 
-        $gptResult = $this->gptQuery($io, $issue, $messages, $functions ?? []);
+        $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? []);
 
         if ($gptResult->isExploitExampleSuccessful() || $numberOfUserMessage > self::MAX_LOOPS) {
             return [
