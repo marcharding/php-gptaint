@@ -11,6 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
@@ -22,6 +23,7 @@ use Symfony\Component\Process\Process;
 )]
 class GptTaintFeedbackCommand extends Command
 {
+    public const MAX_LOOPS = 5;
     private EntityManagerInterface $entityManager;
     private GptQuery $gptQuery;
     private string $projectDir;
@@ -37,7 +39,7 @@ class GptTaintFeedbackCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('issueId', InputArgument::REQUIRED, 'Issue id which should be analyzed (issue must be complete).')
+            ->addArgument('issueId', InputArgument::OPTIONAL, 'Issue id which should be analyzed (issue must be complete).')
             ->addArgument('gptResultId', InputArgument::OPTIONAL, 'Optional existing gpt result id to start the analysis.');
     }
 
@@ -46,8 +48,45 @@ class GptTaintFeedbackCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $issueId = (int) $input->getArgument('issueId');
-        $issue = $this->entityManager->getRepository(Issue::class)->find($issueId);
+        $gptResultId = (int) $input->getArgument('gptResultId');
 
+        if ($gptResultId) {
+            $gptResult = $this->entityManager->getRepository(GptResult::class)->find($gptResultId);
+        }
+
+        if ($issueId) {
+            $issue = $this->entityManager->getRepository(Issue::class)->find($issueId);
+            $this->startGptFeedbackLook($io, $issue, $gptResult ?? null);
+        }
+
+        if (!$issueId) {
+            $question = new ConfirmationQuestion('No issue id given, will process all issues! Do you want to continue? (yes/no) ', false);
+
+            $helper = $this->getHelper('question');
+            $answer = $helper->ask($input, $output, $question);
+
+            if ($answer) {
+                $output->writeln('Ok, starting analysis for all issues.');
+
+                $issues = $this->entityManager->getRepository(Issue::class)->findAll();
+                foreach ($issues as $issue) {
+                    $this->startGptFeedbackLook($io, $issue);
+                }
+            } else {
+                $output->writeln('Canceled command.');
+
+                return Command::FAILURE;
+            }
+        }
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * @param Issue|object|null $issue
+     */
+    public function startGptFeedbackLook(SymfonyStyle $io, Issue|null $issue, GptResult $gptResult = null): void
+    {
         $io->block("Starting analysis '{$issue->getCode()->getName()} / Internal id: {$issue->getCode()->getId()}", 'START', 'fg=yellow', '# ');
 
         if ($issue->getConfirmedState()) {
@@ -60,10 +99,7 @@ class GptTaintFeedbackCommand extends Command
 
         $io->block('Starting initial analysis.', 'INFO', 'fg=gray', '# ');
 
-        $gptResultId = (int) $input->getArgument('gptResultId');
-        if ($gptResultId) {
-            $gptResult = $this->entityManager->getRepository(GptResult::class)->find($gptResultId);
-        } else {
+        if (!$gptResult) {
             $gptResult = $this->initialAnalysis($io, $issue);
         }
 
@@ -80,8 +116,6 @@ class GptTaintFeedbackCommand extends Command
         $io->block('', 'SANDBOX RESPONSE', 'fg=green', '# ');
         $io->block($result['gptResult']->getExploitExample(), 'SUCCESSFUL EXPLOIT', 'fg=black;bg=green', ' ', true);
         $io->block(trim($result['sandboxResult']));
-
-        return Command::SUCCESS;
     }
 
     public function gptQuery($io, $issue, $messages = [], $additionalFunctions = [])
@@ -240,7 +274,7 @@ EOT;
 
         $gptResult = $this->gptQuery($io, $issue, $messages, $functions ?? []);
 
-        if ($gptResult->isExploitExampleSuccessful() || $numberOfUserMessage > 10) {
+        if ($gptResult->isExploitExampleSuccessful() || $numberOfUserMessage > self::MAX_LOOPS) {
             return [
                 'gptResult' => $gptResult,
                 'sandboxResult' => $sandboxResult,
