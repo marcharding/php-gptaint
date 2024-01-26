@@ -84,6 +84,8 @@ EOT;
         foreach ($sortedTestCases as $state => $testCases) {
             foreach ($testCases as $testCase) {
                 // Add or update code entity
+                $io->writeln(PHP_EOL);
+                $io->writeln('Sample '.basename($testCase));
                 $codeEntity = $this->entityManager->getRepository(Code::class)->findOneBy(['directory' => basename($testCase)]);
                 if (!$codeEntity) {
                     $codeEntity = new Code();
@@ -94,15 +96,33 @@ EOT;
                 $this->entityManager->persist($codeEntity);
                 $this->entityManager->flush();
 
+                // Psalm run
+                $io->writeln('Psalm is analysing '.basename($testCase));
                 $psalmConfigXml = $this->projectDir.'/var/psalm.xml';
                 file_put_contents($psalmConfigXml, strtr($psalmConfig, ['%folder%' => "{$testCase}/src/"]));
-
-                $result = [];
-                $start = microtime(true);
-                exec("vendor/bin/psalm --config={$psalmConfigXml} --no-suggestions --monochrome --no-progress --taint-analysis", $result);
+                $psalmResult = [];
+                $time = microtime(true);
+                exec("vendor/bin/psalm --config={$psalmConfigXml} --no-suggestions --monochrome --no-progress --taint-analysis", $psalmResult);
+                $timeElapsed = round(microtime(true) - $time, 4);
+                $psalmResult[] = PHP_EOL."# {$timeElapsed} seconds";
 
                 // true when no errors were found, false when there were errors
-                $psalmResult = false !== strpos(implode(PHP_EOL, $result), 'No errors found!');
+                $psalmResultBool = false !== strpos(implode(PHP_EOL, $psalmResult), 'No errors found!');
+                $io->writeln('Psalm result is "'.($psalmResultBool === false ? 'Taint found' : 'No taint found').'"');
+                // /Psalm run
+
+                // Snyk run
+                $io->writeln('Snyk is analysing '.basename($testCase));
+                $snykResult = [];
+                $time = microtime(true);
+                exec("cd {$testCase}/src/ && snyk code test", $snykResult);
+                $timeElapsed = round(microtime(true) - $time, 4);
+                $snykResult[] = PHP_EOL."# {$timeElapsed} seconds";
+
+                // true when no errors were found, false when there were errors
+                $snykResultBool = false !== strpos(implode(PHP_EOL, $snykResult), 'No issues were found');
+                $io->writeln('Snyk result is "'.($snykResultBool === false ? 'Taint found' : 'No taint found').'"');
+                // /Snyk run
 
                 // simple stripped down, only one file
                 $testCasePhpFiles = glob("{$testCase}/src/*.php");
@@ -112,10 +132,8 @@ EOT;
                 $strippedDownTestCase = preg_replace('/<!--.*?-->|<(?!\/?(?:php|\?))(?:(?<!\?)|(?<=\?)\/?)[^>]*>/', '', $strippedDownTestCase);
                 $strippedDownTestCase = trim($strippedDownTestCase);
                 $strippedDownTestCase = str_replace('; ', ';'.PHP_EOL, $strippedDownTestCase);
-
                 $code = $strippedDownTestCase;
 
-                $io->writeln('Psalm is analysing '.basename($testCase));
                 $regex = '/<!--\n#(?P<comment>.+?)\n-->/s';
 
                 if (preg_match($regex, file_get_contents($testCasePhpFile), $matches)) {
@@ -134,10 +152,11 @@ EOT;
                 $issueEntity->setFile(basename($testCasePhpFile));
                 $issueEntity->setDescription(TaintTypes::getNameById($taintType));
                 $issueEntity->setNote($note);
-                $issueEntity->setPsalmResult(implode(PHP_EOL, $result));
+                $issueEntity->setPsalmResult(implode(PHP_EOL, $psalmResult));
+                $issueEntity->setPsalmState($psalmResultBool === false ? Issue::StateBad : Issue::StateGood);
+                $issueEntity->setSnykResult(implode(PHP_EOL, $snykResult));
+                $issueEntity->setSnykState($snykResultBool === false ? Issue::StateBad : Issue::StateGood);
                 $issueEntity->setConfirmedState($state === 'bad' ? Issue::StateBad : Issue::StateGood);
-                $issueEntity->setPsalmState($psalmResult === false ? Issue::StateBad : Issue::StateGood);
-
                 $issueEntity->setExtractedCodePath($code);
                 $issueEntity->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
                 $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));

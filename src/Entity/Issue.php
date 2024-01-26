@@ -68,6 +68,12 @@ class Issue
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $note = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $snykState = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $snykResult = null;
+
     public function __construct()
     {
         $this->gptResults = new ArrayCollection();
@@ -262,6 +268,30 @@ class Issue
     public function setNote(?string $note): static
     {
         $this->note = $note;
+
+        return $this;
+    }
+
+    public function getSnykState(): ?int
+    {
+        return $this->snykState;
+    }
+
+    public function setSnykState(?int $snykState): static
+    {
+        $this->snykState = $snykState;
+
+        return $this;
+    }
+
+    public function getSnykResult(): ?string
+    {
+        return $this->snykResult;
+    }
+
+    public function setSnykResult(?string $snykResult): static
+    {
+        $this->snykResult = $snykResult;
 
         return $this;
     }
