@@ -149,10 +149,11 @@ class GptTaintFeedbackCommand extends Command
                 if (is_file("{$this->projectDir}/db/database.db")) {
                     unlink("{$this->projectDir}/db/database.db");
                 }
-                system("sqlite3 -init $sqlFile {$this->projectDir}/db/database.db '.exit'");
+                echo "sqlite3 -init $sqlFile {$this->projectDir}/db/database.db '.exit'";
+                system("sqlite3 -init '{$sqlFile}' '{$this->projectDir}/db/database.db' '.exit'");
             } else {
                 system("mysql -hmysql -uroot -e 'DROP DATABASE IF EXISTS myDB;'");
-                system("mysql -hmysql -uroot < {$sqlFile}");
+                system("mysql -hmysql -uroot < '{$sqlFile}'");
             }
         }
 
