@@ -67,3 +67,9 @@ RUN sed -i -e 's/memory_limit = 128M/memory_limit = 1024M/g' \
 
 # Clean up after package installation
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Add snyk (auth must be done manually), integration for CI not yet done
+# https://docs.snyk.io/snyk-cli/configure-the-snyk-cli/environment-variables-for-snyk-cli
+RUN curl -L https://github.com/snyk/cli/releases/download/v1.1274.0/snyk-linux-arm64 -o snyk  \
+    chmod +x ./snyk \
+    mv ./snyk /usr/local/bin/
