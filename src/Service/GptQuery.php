@@ -24,7 +24,7 @@ class GptQuery
         $this->openAiToken = $openAiToken;
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $modelToUse = null, $messages = [], $additionalFunctions = []): GptResult|array
+    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $modelToUse = null, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null): GptResult|array
     {
         if (!isset($modelToUse)) {
             $modelToUse = $this->defaultModel;
@@ -107,16 +107,16 @@ class GptQuery
                 '16k' => 'gpt-3.5-turbo-16k-0613',
             ],
             'gpt-3.5-turbo-0125' => [
-                '4k' => 'gpt-3.5-turbo-0613',
-                '16k' => 'gpt-3.5-turbo-16k-0613',
+                '4k' => 'gpt-3.5-turbo-0125',
+                '16k' => 'gpt-3.5-turbo-16k-0125',
             ],
             'gpt-4-1106-preview' => [
                 '4k' => 'gpt-4-1106-preview',
                 '16k' => 'gpt-4-1106-preview',
             ],
             'gpt-4-0125-preview' => [
-                '4k' => 'gpt-4-1106-preview',
-                '16k' => 'gpt-4-1106-preview',
+                '4k' => 'gpt-4-0125-preview',
+                '16k' => 'gpt-4-0125-preview',
             ],
             'llama.cpp' => [
                 '4k' => 'llama.cpp',
@@ -232,6 +232,9 @@ class GptQuery
         $gptResult->setExploitProbability($exploitProbability);
         $gptResult->setExploitExample($exploitExample);
         $gptResult->setExploitExampleSuccessful($exploitSuccessful ?? false);
+        if ($parentGptResult) {
+            $gptResult->setGptResultParent($parentGptResult);
+        }
 
         return $gptResult;
     }

@@ -43,6 +43,9 @@ class GptResult
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $promptMessage = null;
 
+    #[ORM\OneToOne(targetEntity: self::class, cascade: ['persist', 'remove'])]
+    private ?self $gptResultParent = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -164,6 +167,18 @@ class GptResult
     public function setPromptMessage(?string $promptMessage): static
     {
         $this->promptMessage = $promptMessage;
+
+        return $this;
+    }
+
+    public function getGptResultParent(): ?self
+    {
+        return $this->gptResultParent;
+    }
+
+    public function setGptResultParent(?self $gptResultParent): static
+    {
+        $this->gptResultParent = $gptResultParent;
 
         return $this;
     }

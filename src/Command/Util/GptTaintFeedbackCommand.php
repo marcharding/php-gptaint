@@ -107,18 +107,27 @@ class GptTaintFeedbackCommand extends Command
 
         $io->block($gptResult->getAnalysisResult(), 'ANALYSIS RESULT', 'fg=white', '# ');
 
-        $io->block($gptResult->getExploitExample(), 'EXPLOIT', 'fg=white', '# ');
+        if (strpos($gptResult->getExploitExample(), 'curl') !== false) {
+            $io->block($gptResult->getExploitExample(), 'EXPLOIT', 'fg=white', '# ');
+            $io->block('Starting feedback loop.', 'INFO', 'fg=gray', '# ');
 
-        $io->block('Starting feedback loop.', 'INFO', 'fg=gray', '# ');
+            $result = $this->startFeedbackLoop($io, $issue, $gptResult, $previousMessages = []);
 
-        $result = $this->startFeedbackLoop($io, $issue, $gptResult, $previousMessages = []);
+            $io->block('', 'FINAL SANDBOX RESPONSE', 'fg=cyan', '# ');
 
-        $io->block('', 'SANDBOX RESPONSE', 'fg=green', '# ');
-        $io->block($result['gptResult']->getExploitExample(), 'SUCCESSFUL EXPLOIT', 'fg=black;bg=green', ' ', true);
-        $io->block(trim($result['sandboxResult']));
+            if ($result['gptResult']->isExploitExampleSuccessful()) {
+                $io->block($result['gptResult']->getExploitExample(), 'SUCCESSFUL EXPLOIT', 'fg=black;bg=green', ' ', true);
+                $io->block(trim($result['sandboxResult']));
+            } else {
+                $io->block('good', 'ANALYZED STATE', 'fg=green', '# ');
+                $io->block(trim($result['sandboxResult']));
+            }
+        } else {
+            $io->block('good', 'ANALYZED STATE', 'fg=green', '# ');
+        }
     }
 
-    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [])
+    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null)
     {
         if (empty($messages)) {
             $io->block("Starting analysis '{$issue->getCode()->getName()}/{$issue->getCode()->getId()}", 'GPT', 'fg=gray', '# ');
@@ -130,7 +139,7 @@ class GptTaintFeedbackCommand extends Command
         $counter = 0;
         do {
             try {
-                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, null, $messages, $additionalFunctions);
+                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, null, $messages, $additionalFunctions, $parentGptResult);
             } catch (\Exception $e) {
                 $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
 
@@ -272,7 +281,7 @@ EOT;
 
         $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user'));
 
-        $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? []);
+        $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? [], $gptResult);
 
         if ($gptResult->isExploitExampleSuccessful() || $numberOfUserMessage > self::MAX_LOOPS) {
             return [
