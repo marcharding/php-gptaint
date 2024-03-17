@@ -238,4 +238,54 @@ class GptQuery
 
         return $gptResult;
     }
+
+    public function faultTolerantFunctionCallResultParser($string, $prompt)
+    {
+        $keys = array_keys($prompt['functions'][0]['parameters']['properties']);
+        $keys =
+      [
+          'analysisResult',
+          'exploitProbability',
+          'exploitExample',
+      ];
+        $regexParts = [];
+        foreach ($keys as $key) {
+            //            $pattern = '/(?:,\s*)?"' . $key . '"\s*:\s*(?:"(?P<theResult>[^"]*)"|(?P<theResult>\S+))/';
+            //            $pattern = '/(?:,\s*)?"%s"\s*:\s*(?:"(?P<%s>[^"]*)"|(?P<%s>\S+))/';
+            $pattern = sprintf('\s*("|\')?%s*("|\')?:\s*(")?(?P<%s>.*?)(")', $key, $key);
+            $regexParts[] = $pattern;
+        }
+        $jsonString = <<<EOT
+        {
+  "analysisResult": "The SQL injection vulnerability in the code has been confirmed. The exploit example successfully triggered a SQL syntax error in the sandbox environment. The error message indicates that the input '1'='1' was injected into the SQL query, causing a syntax error. This confirms that the vulnerability can be exploited.",\n
+  "exploitProbability": 100,
+  "exploitExample": curl -X POST -d \"t=' OR '1'='1\" http://example.com"
+}
+EOT;
+        dump('#'.implode('', $regexParts).'#ism');
+        $pattern = '#\s*"analysisResult":\s*(")?(?P<analysisResult>.*?)("|,)\s*"exploitProbability":\s*(?P<exploitProbability>\d+),\s*"exploitExample":\s*"(?P<exploitExample>.*?)"(,\s*"exploitSuccessful":\s*"(?P<exploitSuccessful>.*?)")?#ism';
+        $pattern = '#'.implode('', $regexParts).'#ism';
+
+        if (preg_match($pattern, $jsonString, $matches)) {
+            dump($matches);
+        }
+
+        dump($regexParts);
+        dump($keys);
+
+        $pattern = '/"([^"]+)":\s*("[^"]+"|[^,}]+)\s*(?:,|\})/';
+
+        $pattern = '/"([^"]+)":\s*(".*?"|[^,}]+)\s*(?:,|\})/';
+
+        preg_match_all($pattern, $jsonString, $matches, PREG_SET_ORDER);
+
+        $result = [];
+        foreach ($matches as $match) {
+            $key = $match[1];
+            $value = json_decode($match[2], true);
+            $result[$key] = $value;
+        }
+
+        return $result;
+    }
 }
