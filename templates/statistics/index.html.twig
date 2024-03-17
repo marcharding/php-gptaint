@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello StatisticsController!{% endblock %}
+
+{% block body %}
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold mb-4">Results</h1>
+
+        {% for tool, metrics in results %}
+            <div class="mb-4 p-4 bg-white rounded shadow">
+                <h2 class="text-xl font-bold mb-2">{{ tool }}</h2>
+                <ul>
+                    <li>True Positives: {{ metrics.truePositive }}</li>
+                    <li>True Negatives: {{ metrics.trueNegatives }}</li>
+                    <li>False Positives: {{ metrics.falsePositives }}</li>
+                    <li>False Negatives: {{ metrics.falseNegatives }}</li>
+
+                    <li>Accuracy: {{ metrics.accuracy }}</li>
+                    <li>Sensitivity/Recall: {{ metrics.sensitivity }}</li>
+                    <li>Precision: {{ metrics.precision }}</li>
+                    <li>Specificity: {{ metrics.specificity }}</li>
+                    <li>F1: {{ metrics.f1 }}</li>
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% for metric in ['accuracy', 'sensitivity', 'precision', 'f1'] %}
+
+        <div class="mt-8 bg-white p-4 rounded shadow">
+            <!-- Add a canvas element for the chart -->
+            <canvas id="chart-{{ metric }}"></canvas>
+        </div>
+
+        <script>
+            // Prepare data for the chart
+            var toolLabels = {{ results | keys | json_encode | raw }};
+            var accuracyData = {{ results | map(tool => tool[metric]) | json_encode | raw }};
+
+            // Create a chart using Chart.js
+            var ctx = document.getElementById('chart-{{ metric }}').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: toolLabels,
+                    datasets: [{
+                        label: '{{ metric }}',
+                        data: accuracyData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        </script>
+
+    {% endfor %}
+
+{% endblock %}

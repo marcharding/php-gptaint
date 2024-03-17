@@ -39,6 +39,41 @@ class GptResultRepository extends ServiceEntityRepository
         }
     }
 
+    public function findLastGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult
+    {
+        return $this->createQueryBuilder('g')
+            ->where('g.gptResultParent IS NULL')
+            ->andWhere('g.issue = :issue')
+            ->andWhere('g.gptVersion LIKE :model')
+            ->setParameter('issue', $issue)
+            ->setParameter('model', $model)
+            ->orderBy('g.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findLastGptResultByParentGptResult($gptResult): GptResult|null
+    {
+        return $this->createQueryBuilder('g')
+            ->where('g.gptResultParent = :gptResult')
+            ->setParameter('gptResult', $gptResult)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findLastFeedbackGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult
+    {
+        $gptResult = $lastGptResult = $this->findLastGptResultByIssue($issue, $model);
+        while ($gptResult) {
+            $lastGptResult = $gptResult;
+            $gptResult = $this->findLastGptResultByParentGptResult($gptResult);
+        }
+
+        return $lastGptResult;
+    }
+
     //    /**
     //     * @return GptResult[] Returns an array of GptResult objects
     //     */

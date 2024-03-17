@@ -34,6 +34,22 @@
                     <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.type }}</dd>
                 </div>
                 <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Confirmed state</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.confirmedState }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Psalm state</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.psalmState }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Taint type</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.description|nl2br }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                    <dt class="text-sm leading-6 text-gray-900">Note</dt>
+                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.note|nl2br }}</dd>
+                </div>
+                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                     <dt class="text-sm leading-6 text-gray-900">Plugin</dt>
                     <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0 flex justify-between">
                         <a href="{{ path('app_code_show', {'id': issue.code.id}) }}"
@@ -86,6 +102,8 @@
                                 </pre>
                             </div>
                         </div>
+                    <a href="{{ path('app_prompt_show', {'id': gptResult.prompt.id}) }}">show prompt</a>
+                    <a href="{{ path('app_issue_gpt_taint_test', {'issue': issue.id, 'gptResult': gptResult.id}) }}">run taint test</a>
                 </div>
             {% endfor %}
             </div>
@@ -108,8 +126,15 @@
             </pre>
         </div>
         <div class="mx-auto pb-16">
+            <p class="text-sm text-gray-700 font-bold">Psalm result</p>
             <pre>
                 <code class="text-xs pb-16 language-php">{{ issue.psalmResult }}</code>
+            </pre>
+        </div>
+        <div class="mx-auto pb-16">
+            <p class="text-sm text-gray-700 font-bold">Snyk result</p>
+            <pre>
+                <code class="text-xs pb-16 language-php">{{ issue.snykResult }}</code>
             </pre>
         </div>
     </div>

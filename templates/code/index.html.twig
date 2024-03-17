@@ -39,11 +39,96 @@
                             </tr>
                         </thead>
                         <tbody>
+
+                        {% set totalIssuesCount = 0 %}
+                        {% set truePositiveCount = 0 %}
+                        {% set falsePositiveCount = 0 %}
+                        {% set trueNegativeCount = 0 %}
+                        {% set falseNegativeCount = 0 %}
+
+                        {% for code in codes %}
+                            {% for issue in code.issues %}
+                                {% set totalIssuesCount = totalIssuesCount + 1 %}
+                                {% if issue.confirmedState == 1 and issue.probabilityAverage > 75 %}
+                                    {% set truePositiveCount = truePositiveCount + 1 %}
+                                {% elseif issue.confirmedState == 0 and issue.probabilityAverage > 75 %}
+                                    {% set falsePositiveCount = falsePositiveCount + 1 %}
+                                {% elseif issue.confirmedState == 0 and issue.probabilityAverage < 25 %}
+                                    {% set trueNegativeCount = trueNegativeCount + 1 %}
+                                {% elseif issue.confirmedState == 1 and issue.probabilityAverage < 25 %}
+                                    {% set falseNegativeCount = falseNegativeCount + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+
+                        <h2 class="py-4">GPT</h2>
+                        <p>totalIssuesCount: {{ totalIssuesCount }}</p>
+                        <p>truePositiveCount  {{ truePositiveCount }}</p>
+                        <p>falsePositiveCount {{ falsePositiveCount }}</p>
+                        <p>trueNegativeCount  {{ trueNegativeCount }}</p>
+                        <p>falseNegativeCount {{ falseNegativeCount }}</p>
+
+                        {% set totalIssuesCount = 0 %}
+                        {% set truePositiveCount = 0 %}
+                        {% set falsePositiveCount = 0 %}
+                        {% set trueNegativeCount = 0 %}
+                        {% set falseNegativeCount = 0 %}
+
+                        {% for code in codes %}
+                            {% for issue in code.issues %}
+                                {% set totalIssuesCount = totalIssuesCount + 1 %}
+                                {% if issue.confirmedState == 1 and issue.psalmState == 1 %}
+                                    {% set truePositiveCount = truePositiveCount + 1 %}
+                                {% elseif issue.confirmedState == 0 and issue.psalmState == 0  %}
+                                    {% set falsePositiveCount = falsePositiveCount + 1 %}
+                                {% elseif issue.confirmedState == 0 and issue.psalmState == 1  %}
+                                    {% set trueNegativeCount = trueNegativeCount + 1 %}
+                                {% elseif issue.confirmedState == 1 and issue.psalmState == 0  %}
+                                    {% set falseNegativeCount = falseNegativeCount + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+
+                        <h2 class="py-4">PSALM</h2>
+                        <p>totalIssuesCount: {{ totalIssuesCount }}</p>
+                        <p>truePositiveCount  {{ truePositiveCount }}</p>
+                        <p>falsePositiveCount {{ falsePositiveCount }}</p>
+                        <p>trueNegativeCount  {{ trueNegativeCount }}</p>
+                        <p>falseNegativeCount {{ falseNegativeCount }}</p>
+
                         {% for code in codes %}
                             <tr>
                                 <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">{{ code.name }}</td>
                                 <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">{{ code.directory }}</td>
-                                <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8"><span class="{{ (code.issuesProbabilityGreater80 > 0) ? 'text-red-600': 'text-green-600' }}">{{ code.issuesProbabilityGreater80 }}</span>/{{ code.issues|length }} </td>
+                                <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                                    {% for issue in code.issues %}
+                                        {% if issue.getGptResults is not empty %}
+                                            {% if issue.confirmedState == 1 and issue.probabilityAverage > 75  %}
+                                                <b>Chat GPT true positive</b>
+                                                <br>
+                                            {% endif %}
+                                            {% if issue.confirmedState == 0 and issue.probabilityAverage > 75 %}
+                                                <b>Chat GPT false positive</b>
+                                                <br>
+                                            {% endif %}
+                                            {% if issue.confirmedState == 0 and issue.probabilityAverage < 25  %}
+                                                <b>Chat GPT true negative</b>
+                                                <br>
+                                            {% endif %}
+                                            {% if issue.confirmedState == 1  and issue.probabilityAverage < 25  %}
+                                                <b>Chat GPT false negative</b>
+                                                <br>
+                                            {% endif %}
+                                        {% endif %}
+                                        Pslam-State: {{ issue.psalmState }}
+                                        <br/>
+                                        Confirmed-State: {{ issue.confirmedState }}
+                                        <br/>
+                                        GPT-Probability: {{ issue.probabilityAverage }}
+                                        <br/>
+                                    {% endfor %}
+                                    <span class="{{ (code.issuesProbabilityGreater80 > 0) ? 'text-red-600': 'text-green-600' }}">{{ code.issuesProbabilityGreater80 }}</span>/{{ code.issues|length }}
+                                </td>
                                 <td class="relative whitespace-nowrap border-b border-gray-200 py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-8 lg:pr-8">
                                     <a href="{{ path('app_code_show', {'id': code.id}) }}"
                                     class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">

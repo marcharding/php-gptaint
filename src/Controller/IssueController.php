@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\GptResult;
 use App\Entity\Issue;
 use App\Form\IssueType;
 use App\Repository\GptResultRepository;
@@ -11,9 +12,11 @@ use App\Service\SarifToFlatArrayConverter;
 use App\Service\TaintTypes;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
 use Yethee\Tiktoken\EncoderProvider;
 
@@ -193,4 +196,44 @@ class IssueController extends AbstractController
 
         return $errors;
     }
+
+
+    #[Route('/{issue}/taintTest/{gptResult}', name: 'app_issue_gpt_taint_test', methods: ['GET', 'POST'])]
+    public function taintTest(Request $request, Issue $issue, IssueRepository $issueRepository, GptResult $gptResult, GptResultRepository $gptResultRepository): Response
+    {
+
+
+
+echo $gptResult->getPrompt()->getPrompt();
+
+echo $issue->getExtractedCodePath();
+        exit;
+
+        $source = "/var/www/application/data/nist/samples_selection/2022-05-12-php-test-suite-sqli-v1-0-0/{$issue->getCode()->getDirectory()}/src/sample.php";
+
+        $filesystem = new Filesystem();
+        $filesystem->copy($source, "/var/www/application/sandbox/public/index.php", true);
+       $file =  file_get_contents("/var/www/application/sandbox/public/index.php");
+        $file = str_replace('"mysql"', '"database"', $file);
+        $file = str_replace('host=mysql', 'host=database', $file);
+
+       file_put_contents("/var/www/application/sandbox/public/index.php", $file);
+        $process = new Process(explode(" ", $gptResult->getExploitExample()));
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+           echo "faield";
+        }
+
+        echo $process->getOutput();
+
+               dump($issue->getCode()->getDirectory());
+        dump($issue);
+        dump($gptResult);
+        dump($gptResult->getExploitExample());
+       exit;
+
+    }
+
+
 }

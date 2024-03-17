@@ -21,6 +21,14 @@ class CodeController extends AbstractController
         ]);
     }
 
+    #[Route('/type/nist', name: 'app_code_index', methods: ['GET'])]
+    public function indexNist(CodeRepository $codeRepository): Response
+    {
+        return $this->render('code/index.html.twig', [
+            'codes' => $codeRepository->findBy(['type' => 'NIST-Sample']),
+        ]);
+    }
+
     #[Route('/new', name: 'app_code_new', methods: ['GET', 'POST'])]
     public function new(Request $request, CodeRepository $codeRepository): Response
     {
