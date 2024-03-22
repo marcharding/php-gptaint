@@ -44,3 +44,7 @@ yarn-error.log
 /sandbox
 /db
 ###< wordpress-sandbox ###
+
+###> phpstan/phpstan ###
+phpstan.neon
+###< phpstan/phpstan ###

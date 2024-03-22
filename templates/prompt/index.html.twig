@@ -1,73 +1,63 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Prompt index{% endblock %}
+{% block title %}Prompt overview{% endblock %}
+
+{% block header %}
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <h1 class="text-xl font-semibold leading-6 text-gray-900">Prompts overview</h1>
+    </div>
+{% endblock %}
 
 {% block body %}
-    <h1>Prompt index</h1>
 
-
-    <a href="{{ path('app_prompt_new') }}">Create new</a>
-
-
-
-
-
-        <div class="sm:flex sm:items-center">
-            <div class="sm:flex-auto">
-                <p class="mt-2 text-sm text-gray-700">Prompt index</p>
-            </div>
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto flex justify-between">
+            <p class="mt-2 text-sm text-gray-700">Details about the found code issues/taint</p>
+            <a href="{{ path('app_prompt_new') }}"
+               class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                Create new
+            </a>
         </div>
-        <div class="mt-8 flow-root">
-            <div class="-mx-4 -my-2 sm:-mx-6 lg:-mx-8">
-                <div class="inline-block min-w-full py-2 align-middle">
-                    <table class="min-w-full border-separate border-spacing-0">
-                        <thead>
+    </div>
+
+    <div class="mt-8 flow-root">
+        <div class="-mx-4 -my-2 sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle">
+                <table class="min-w-full border-separate border-spacing-0">
+                    <thead>
+                    <tr>
+                        <th scope="col"
+                            class="sticky top-0 z-10 border-b border-gray-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
+                            Prompt
+                        </th>
+                        <th scope="col"
+                            class="sticky top-0 z-10 border-b border-gray-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
+                            <span class="sr-only">Edit</span>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for prompt in prompts %}
                         <tr>
-                            <th scope="col"
-                                class="sticky top-0 z-10 border-b border-gray-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
-                                ID
-                            </th>
-                            <th scope="col"
-                                class="sticky top-0 z-10 border-b border-gray-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
-                                Prompt
-                            </th>
-                            <th scope="col"
-                                class="sticky top-0 z-10 border-b border-gray-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
-                                <span class="sr-only">Edit</span>
-                            </th>
+                            <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                                {{ prompt.prompt|u.truncate(128, '...', false) }}
+                            </td>
+                            <td class="relative whitespace-nowrap border-b border-gray-200 py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-8 lg:pr-8">
+                                <a href="{{ path('app_prompt_show', {'id': prompt.id}) }}"
+                                   class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                                    Details
+                                </a>
+                            </td>
                         </tr>
-                        </thead>
-                        <tbody>
-                        {% for prompt in prompts %}
-                            <tr>
-                                <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">{{ prompt.id }}
-
-                                </td>
-                                <td class="whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
-                                    ({{ prompt.prompt|u.truncate(128, '...', false) }}
-                                </td>
-
-                                <td class="relative whitespace-nowrap border-b border-gray-200 py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-8 lg:pr-8">
-                                    <a href="{{ path('app_issue_show', {'id': prompt.id}) }}"
-                                       class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                                        Details
-                                    </a>
-                                    <a href="{{ path('app_prompt_show', {'id': prompt.id}) }}">show</a>
-                                    <a href="{{ path('app_prompt_edit', {'id': prompt.id}) }}">edit</a>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="4">No records found.</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    {% else %}
+                        <tr>
+                            <td colspan="4">No records found.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-
-
-
+    </div>
 
 {% endblock %}

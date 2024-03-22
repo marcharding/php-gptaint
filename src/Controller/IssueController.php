@@ -2,23 +2,14 @@
 
 namespace App\Controller;
 
-use App\Entity\GptResult;
 use App\Entity\Issue;
-use App\Form\IssueType;
-use App\Repository\GptResultRepository;
 use App\Repository\IssueRepository;
-use App\Service\CodeExtractor\CodeExtractor;
-use App\Service\SarifToFlatArrayConverter;
 use App\Service\TaintTypes;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
-use Yethee\Tiktoken\EncoderProvider;
 
 #[Route('/issue')]
 class IssueController extends AbstractController
@@ -28,55 +19,6 @@ class IssueController extends AbstractController
     {
         return $this->render('issue/index.html.twig', [
             'issues' => $issueRepository->findAll(),
-        ]);
-    }
-
-    #[Route('/issue_type_list', name: 'issue_types_list')]
-    public function list(IssueRepository $issueRepository): Response
-    {
-        $issueTypes = $issueRepository->findDistinctIssueTypes();
-
-        return $this->render('issue/issue_group.html.twig', [
-            'issueTypes' => $issueTypes,
-        ]);
-    }
-
-    #[Route('/issue_type/{issueType}', name: 'issue_list_by_type')]
-    public function listByType(string $issueType, IssueRepository $issueRepository): Response
-    {
-        $issues = $issueRepository->findByIssueType($issueType);
-
-        return $this->render('issue/issue_by_type.html.twig', [
-            'issues' => $issues,
-        ]);
-    }
-
-    #[Route('/issue_with_gpt_result', name: 'issue_with_gpt_result')]
-    public function listWithGptResultType(IssueRepository $issueRepository): Response
-    {
-        $issues = $issueRepository->findAllWithGptResult();
-
-        return $this->render('issue/issues_with_gpt_result.html.twig', [
-            'issues' => $issues,
-        ]);
-    }
-
-    #[Route('/new', name: 'app_issue_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, IssueRepository $issueRepository): Response
-    {
-        $issue = new Issue();
-        $form = $this->createForm(IssueType::class, $issue);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $issueRepository->save($issue, true);
-
-            return $this->redirectToRoute('app_issue_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->renderForm('issue/new.html.twig', [
-            'issue' => $issue,
-            'form' => $form,
         ]);
     }
 
@@ -107,70 +49,6 @@ class IssueController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_issue_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Issue $issue, IssueRepository $issueRepository): Response
-    {
-        $form = $this->createForm(IssueType::class, $issue);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $issueRepository->save($issue, true);
-
-            return $this->redirectToRoute('app_issue_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->renderForm('issue/edit.html.twig', [
-            'issue' => $issue,
-            'form' => $form,
-        ]);
-    }
-
-    #[Route('/{id}', name: 'app_issue_delete', methods: ['POST'])]
-    public function delete(Request $request, Issue $issue, IssueRepository $issueRepository): Response
-    {
-        if ($this->isCsrfTokenValid('delete'.$issue->getId(), $request->request->get('_token'))) {
-            $issueRepository->remove($issue, true);
-        }
-
-        return $this->redirectToRoute('app_issue_index', [], Response::HTTP_SEE_OTHER);
-    }
-
-    #[Route('/{id}/extract-code', name: 'app_issue_extract_code', methods: ['GET'])]
-    public function extractCode(Issue $issue, ManagerRegistry $managerRegistry, $projectDir): Response
-    {
-        $codeExtractor = new CodeExtractor();
-        $folderName = $issue->getCode()->getDirectory();
-
-        $provider = new EncoderProvider();
-        $encoder = $provider->get('cl100k_base');
-
-        $s = new SarifToFlatArrayConverter();
-        $psalmResultFile = $projectDir.DIRECTORY_SEPARATOR.'data/wordpress/sarif'.DIRECTORY_SEPARATOR.$folderName.'.sarif';
-        $psalmResultFile = json_decode(file_get_contents($psalmResultFile), true);
-        $sarifResults = $s->getArray($psalmResultFile);
-
-        // store optimized codepath and unoptimized for token comparison / effectiveness
-        $extractedCodePath = '';
-        $unoptimizedCodePath = '';
-        $entry = $sarifResults[$issue->getTaintId().'_'.$issue->getFile()];
-        foreach ($entry['locations'] as $item) {
-            $pluginRoot = $projectDir.DIRECTORY_SEPARATOR.'data/wordpress/plugins_tainted'.DIRECTORY_SEPARATOR.$folderName.DIRECTORY_SEPARATOR;
-            $extractedCodePath .= "// @FILE: /wp-content/plugins/{$folderName}/{$item['file']}".PHP_EOL.PHP_EOL.PHP_EOL;
-            $extractedCodePath .= $codeExtractor->extractCodeLeadingToLine($pluginRoot.$item['file'], $item['region']['startLine']);
-            $extractedCodePath .= PHP_EOL.PHP_EOL.PHP_EOL;
-            $unoptimizedCodePath .= file_get_contents($pluginRoot.$item['file']);
-        }
-
-        $issue->setExtractedCodePath($extractedCodePath);
-        $issue->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $extractedCodePath))));
-        $issue->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $unoptimizedCodePath))));
-
-        $managerRegistry->getManager()->persist($issue);
-        $managerRegistry->getManager()->flush();
-
-        return $this->redirectToRoute('app_issue_show', ['id' => $issue->getId()]);
-    }
-
     public function getPsalmResultsArray($projectDir, $folderName): array
     {
         $psalmResultFile = $projectDir.DIRECTORY_SEPARATOR.'data/wordpress/results'.DIRECTORY_SEPARATOR.$folderName.'.txt';
@@ -196,44 +74,4 @@ class IssueController extends AbstractController
 
         return $errors;
     }
-
-
-    #[Route('/{issue}/taintTest/{gptResult}', name: 'app_issue_gpt_taint_test', methods: ['GET', 'POST'])]
-    public function taintTest(Request $request, Issue $issue, IssueRepository $issueRepository, GptResult $gptResult, GptResultRepository $gptResultRepository): Response
-    {
-
-
-
-echo $gptResult->getPrompt()->getPrompt();
-
-echo $issue->getExtractedCodePath();
-        exit;
-
-        $source = "/var/www/application/data/nist/samples_selection/2022-05-12-php-test-suite-sqli-v1-0-0/{$issue->getCode()->getDirectory()}/src/sample.php";
-
-        $filesystem = new Filesystem();
-        $filesystem->copy($source, "/var/www/application/sandbox/public/index.php", true);
-       $file =  file_get_contents("/var/www/application/sandbox/public/index.php");
-        $file = str_replace('"mysql"', '"database"', $file);
-        $file = str_replace('host=mysql', 'host=database', $file);
-
-       file_put_contents("/var/www/application/sandbox/public/index.php", $file);
-        $process = new Process(explode(" ", $gptResult->getExploitExample()));
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-           echo "faield";
-        }
-
-        echo $process->getOutput();
-
-               dump($issue->getCode()->getDirectory());
-        dump($issue);
-        dump($gptResult);
-        dump($gptResult->getExploitExample());
-       exit;
-
-    }
-
-
 }

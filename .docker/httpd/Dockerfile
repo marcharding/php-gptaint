@@ -30,13 +30,14 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libxml2-dev \
     libxslt1-dev \
-    sqlite3
+    sqlite3 \
+    wget
 
 # Configure and install the GD extension
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install gd
 
 # Install other PHP extensions
-RUN docker-php-ext-install \
+    RUN docker-php-ext-install \
     mysqli \
     bcmath \
     intl \
@@ -45,7 +46,8 @@ RUN docker-php-ext-install \
     pdo_mysql \
     zip \
     opcache \
-    xsl
+    xsl \
+    ast
 
 # Set up Apache server name
 RUN echo "ServerName localhost" | tee /etc/apache2/conf-available/fqdn.conf && a2enconf fqdn
@@ -71,6 +73,6 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # TODO: Add switch for architecture
 # Add snyk (auth must be done manually), integration for CI not yet done
 # https://docs.snyk.io/snyk-cli/configure-the-snyk-cli/environment-variables-for-snyk-cli
-# RUN curl -L https://github.com/snyk/cli/releases/download/v1.1274.0/snyk-linux-arm64 -o snyk  \
-#     chmod +x ./snyk \
-#     mv ./snyk /usr/local/bin/
+RUN curl -L https://github.com/snyk/cli/releases/download/v1.1274.0/snyk-linux-arm64 -o snyk && \
+    chmod +x ./snyk && \
+    mv ./snyk /usr/local/bin/

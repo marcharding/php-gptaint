@@ -29,7 +29,7 @@ class BaseGptMessageHandler
         $io = new SymfonyStyle(new ArgvInput(), new ConsoleOutput());
         $issue = $this->entityManager->getRepository(Issue::class)->findOneBy(['id' => $message->getId()]);
 
-        $io->writeln("Querying GPT for plugin '{$issue->getCode()->getName()}', issue id {$message->getId()}");
+        $io->writeln("Querying GPT for plugin '{$issue->getName()}', issue id {$message->getId()}");
 
         $counter = 0;
         $temperature = 0;
@@ -37,7 +37,8 @@ class BaseGptMessageHandler
             try {
                 $gptResult = $this->gptQuery->queryGpt($issue, true, $temperature);
             } catch (\Exception $e) {
-                $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
+
                 return;
             }
             $temperature = 0.00 + rand(0, 100) * 0.0005;
@@ -45,7 +46,7 @@ class BaseGptMessageHandler
         } while (!($gptResult instanceof GptResult) && $counter <= 3);
 
         if (!($gptResult instanceof GptResult)) {
-            $io->error("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+            $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return;
         }
@@ -53,6 +54,6 @@ class BaseGptMessageHandler
         $this->entityManager->persist($gptResult);
         $this->entityManager->flush();
 
-        $io->success("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+        $io->success("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
     }
 }

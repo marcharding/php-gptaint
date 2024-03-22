@@ -2,7 +2,6 @@
 
 namespace App\Entity;
 
-use App\Repository\GptResultRepository;
 use App\Repository\IssueRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -21,22 +20,8 @@ class Issue
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
-    private ?int $taintId = null;
-
-    /**
-     * @ORM\ManyToOne(targetEntity="Issue")
-     *
-     * @ORM\JoinColumn(name="issue_id", referencedColumnName="id")
-     */
-    private $issue;
-
     #[ORM\Column(type: Types::TEXT)]
     private ?string $extractedCodePath = null;
-
-    #[ORM\ManyToOne(inversedBy: 'issues')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Code $code = null;
 
     #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]
     #[ORM\OrderBy(['id' => 'DESC'])]
@@ -75,6 +60,15 @@ class Issue
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $snykResult = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $filepath = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $name = null;
+
+    #[ORM\Column]
+    private ?int $CweId = null;
+
     public function __construct()
     {
         $this->gptResults = new ArrayCollection();
@@ -105,18 +99,6 @@ class Issue
     public function setExtractedCodePath(string $extractedCodePath): static
     {
         $this->extractedCodePath = $extractedCodePath;
-
-        return $this;
-    }
-
-    public function getCode(): ?Code
-    {
-        return $this->code;
-    }
-
-    public function setCode(?Code $code): static
-    {
-        $this->code = $code;
 
         return $this;
     }
@@ -293,6 +275,42 @@ class Issue
     public function setSnykResult(?string $snykResult): static
     {
         $this->snykResult = $snykResult;
+
+        return $this;
+    }
+
+    public function getFilepath(): ?string
+    {
+        return $this->filepath;
+    }
+
+    public function setFilepath(string $filepath): static
+    {
+        $this->filepath = $filepath;
+
+        return $this;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): static
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function getCweId(): ?int
+    {
+        return $this->CweId;
+    }
+
+    public function setCweId(int $CweId): static
+    {
+        $this->CweId = $CweId;
 
         return $this;
     }

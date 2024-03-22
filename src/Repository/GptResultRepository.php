@@ -39,7 +39,7 @@ class GptResultRepository extends ServiceEntityRepository
         }
     }
 
-    public function findLastGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult
+    public function findLastGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult|null
     {
         return $this->createQueryBuilder('g')
             ->where('g.gptResultParent IS NULL')
@@ -63,7 +63,7 @@ class GptResultRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function findLastFeedbackGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult
+    public function findLastFeedbackGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult|null
     {
         $gptResult = $lastGptResult = $this->findLastGptResultByIssue($issue, $model);
         while ($gptResult) {

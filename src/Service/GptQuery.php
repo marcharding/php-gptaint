@@ -45,7 +45,8 @@ class GptQuery
 
         $code = $issue->getExtractedCodePath();
 
-        $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => $issue->getCode()->getType(), 'active' => 1]);
+        $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => 999, 'active' => 1]);
+
         $promptMessage = $promptEntity->getPrompt();
         $prompt = [
             'temperature' => $temperature,

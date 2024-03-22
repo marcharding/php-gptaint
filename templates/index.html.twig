@@ -1,9 +1,28 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Issue index{% endblock %}
+{% block title %}Overview{% endblock %}
 
 {% block body %}
-    <h1>Issue index</h1>
 
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto flex justify-between">
+            {% for tool, metrics in results %}
+                <div>
+                    <h2 class="text-lg font-bold mb-2">{{ tool }}</h2>
+                    <ul>
+                        <li>True Positives: {{ metrics.truePositive }}</li>
+                        <li>True Negatives: {{ metrics.trueNegatives }}</li>
+                        <li>False Positives: {{ metrics.falsePositives }}</li>
+                        <li>False Negatives: {{ metrics.falseNegatives }}</li>
+                        <li>Accuracy: {{ metrics.accuracy }}</li>
+                        <li>Sensitivity/Recall: {{ metrics.sensitivity }}</li>
+                        <li>Precision: {{ metrics.precision }}</li>
+                        <li>Specificity: {{ metrics.specificity }}</li>
+                        <li>F1: {{ metrics.f1 }}</li>
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 
 {% endblock %}

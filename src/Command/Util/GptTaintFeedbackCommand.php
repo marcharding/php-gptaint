@@ -87,7 +87,7 @@ class GptTaintFeedbackCommand extends Command
      */
     public function startGptFeedbackLook(SymfonyStyle $io, Issue|null $issue, GptResult $gptResult = null): void
     {
-        $io->block("Starting analysis '{$issue->getCode()->getName()} / Internal id: {$issue->getCode()->getId()}", 'START', 'fg=yellow', '# ');
+        $io->block("Starting analysis '{$issue->getName()} / Internal id: {$issue->getId()}", 'START', 'fg=yellow', '# ');
 
         if ($issue->getConfirmedState()) {
             $io->block('bad', 'CONFIRMED STATE', 'fg=red', '# ');
@@ -95,7 +95,7 @@ class GptTaintFeedbackCommand extends Command
             $io->block('good', 'CONFIRMED STATE', 'fg=green', '# ');
         }
 
-        $io->block(PHP_EOL.PHP_EOL.$issue->getCode()->getIssues()->first()->getExtractedCodePath().PHP_EOL, 'CODE', 'fg=white', '# ');
+        $io->block(PHP_EOL.PHP_EOL.$issue->getExtractedCodePath().PHP_EOL, 'CODE', 'fg=white', '# ');
 
         $io->block('Starting initial analysis.', 'INFO', 'fg=gray', '# ');
 
@@ -130,10 +130,10 @@ class GptTaintFeedbackCommand extends Command
     public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null)
     {
         if (empty($messages)) {
-            $io->block("Starting analysis '{$issue->getCode()->getName()}/{$issue->getCode()->getId()}", 'GPT', 'fg=gray', '# ');
+            $io->block("Starting analysis '{$issue->getName()}/{$issue->getId()}", 'GPT', 'fg=gray', '# ');
         } else {
             $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user'));
-            $io->block("Refine or confirm (Iteration {$numberOfUserMessage}) for '{$issue->getCode()->getName()}/{$issue->getCode()->getId()}", 'GPT', 'fg=gray', '# ');
+            $io->block("Refine or confirm (Iteration {$numberOfUserMessage}) for '{$issue->getName()}/{$issue->getId()}", 'GPT', 'fg=gray', '# ');
         }
 
         $counter = 0;
@@ -141,7 +141,7 @@ class GptTaintFeedbackCommand extends Command
             try {
                 $gptResult = $this->gptQuery->queryGpt($issue, true, 1, null, $messages, $additionalFunctions, $parentGptResult);
             } catch (\Exception $e) {
-                $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
                 return false;
             }
@@ -149,7 +149,7 @@ class GptTaintFeedbackCommand extends Command
         } while (!($gptResult instanceof GptResult) && $counter <= 5);
 
         if (!($gptResult instanceof GptResult)) {
-            $io->error("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+            $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return false;
         }
@@ -164,7 +164,7 @@ class GptTaintFeedbackCommand extends Command
     {
         // get source directory of sample
         $finder = new Finder();
-        $sourceDirectories = $finder->files()->in("{$this->projectDir}/data/nist/samples_selection")->directories()->name($issue->getCode()->getDirectory())->getIterator();
+        $sourceDirectories = $finder->files()->in("{$this->projectDir}/data/nist/samples_selection")->directories()->name($issue->getName())->getIterator();
         $sourceDirectories->rewind();
         $sourceDirectory = $sourceDirectories->current()->getRealPath();
 
@@ -310,7 +310,7 @@ EOT;
             try {
                 $gptResult = $this->gptQuery->queryGpt($issue, true, $temperature);
             } catch (\Exception $e) {
-                $io->error("Exception {$e->getMessage()} / {$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
                 return;
             }
@@ -319,7 +319,7 @@ EOT;
         } while (!($gptResult instanceof GptResult) && $counter <= 3);
 
         if (!($gptResult instanceof GptResult)) {
-            $io->error("{$issue->getCode()->getName()} / {$issue->getType()} [Code-ID {$issue->getCode()->getId()}, Issue-ID: {$issue->getId()}]");
+            $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return;
         }
