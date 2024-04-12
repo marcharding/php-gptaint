@@ -5,10 +5,10 @@
 {% block body %}
 
     <div class="sm:flex sm:items-center">
-        <div class="sm:flex-auto flex justify-between">
+        <div class="sm:flex-auto flex flex-wrap justify-between gap-16">
             {% for tool, metrics in results %}
-                <div>
-                    <h2 class="text-lg font-bold mb-2">{{ tool }}</h2>
+                <div class="w-3/12">
+                    <h2 class="text-lg font-bold mb-2">{{ tool }} ({{ metrics.sum }})</h2>
                     <ul>
                         <li>True Positives: {{ metrics.truePositive }}</li>
                         <li>True Negatives: {{ metrics.trueNegatives }}</li>

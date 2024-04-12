@@ -19,8 +19,10 @@ class IndexController extends AbstractController
         $methods = [
             'psalm',
             'snyk',
-            'gpt-3.5-turbo_0613',
+            'gpt-3.5-turbo-0125',
             'gpt-4-0125-preview',
+            'mistral-small-latest',
+            'phan',
         ];
 
         $statistics = [];
@@ -42,14 +44,13 @@ class IndexController extends AbstractController
                     case 'snyk':
                         $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $issue->getSnykState());
                         break;
-                    case 'gpt-3.5-turbo_0613':
-                        $gptResult = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, 'gpt-3.5-turbo%-0613');
-                        if ($gptResult) {
-                            $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $gptResult->isExploitExampleSuccessful());
-                        }
+                    case 'phan':
+                        $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $issue->getPhanState());
                         break;
                     case 'gpt-4-0125-preview':
-                        $gptResult = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, 'gpt-4-0125-preview');
+                    case 'gpt-3.5-turbo-0125':
+                    case 'mistral-small-latest':
+                        $gptResult = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, $method);
                         if ($gptResult) {
                             $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $gptResult->isExploitExampleSuccessful());
                         }
@@ -83,7 +84,7 @@ class IndexController extends AbstractController
             if (!$state) {
                 $table['trueNegatives']++;
             } else {
-                $table['falsePositive']++;
+                $table['falsePositives']++;
             }
         }
 
@@ -93,6 +94,9 @@ class IndexController extends AbstractController
     private function calculateStatitics($results)
     {
         $count = array_sum($results);
+
+        $results['sum'] = $count;
+
         $results['count'] = $count;
 
         $results['sensitivity'] = $results['truePositive'] != 0 ? $results['truePositive'] / 25 : 0;

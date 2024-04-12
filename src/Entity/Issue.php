@@ -27,14 +27,8 @@ class Issue
     #[ORM\OrderBy(['id' => 'DESC'])]
     private Collection $gptResults;
 
-    #[ORM\Column(length: 255)]
-    private ?string $type = null;
-
     #[ORM\Column(type: Types::TEXT)]
     private ?string $psalmResult = null;
-
-    #[ORM\Column(length: 8192)]
-    private ?string $description = null;
 
     #[ORM\Column(length: 255)]
     private ?string $file = null;
@@ -68,6 +62,12 @@ class Issue
 
     #[ORM\Column]
     private ?int $CweId = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $phanState = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $phanResult = null;
 
     public function __construct()
     {
@@ -133,18 +133,6 @@ class Issue
         return $this;
     }
 
-    public function getType(): ?string
-    {
-        return $this->type;
-    }
-
-    public function setType(string $type): static
-    {
-        $this->type = $type;
-
-        return $this;
-    }
-
     public function getPsalmResult(): ?string
     {
         return $this->psalmResult;
@@ -153,18 +141,6 @@ class Issue
     public function setPsalmResult(string $psalmResult): static
     {
         $this->psalmResult = $psalmResult;
-
-        return $this;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(string $description): static
-    {
-        $this->description = $description;
 
         return $this;
     }
@@ -311,6 +287,30 @@ class Issue
     public function setCweId(int $CweId): static
     {
         $this->CweId = $CweId;
+
+        return $this;
+    }
+
+    public function getPhanState(): ?int
+    {
+        return $this->phanState;
+    }
+
+    public function setPhanState(?int $phanState): static
+    {
+        $this->phanState = $phanState;
+
+        return $this;
+    }
+
+    public function getPhanResult(): ?string
+    {
+        return $this->phanResult;
+    }
+
+    public function setPhanResult(?string $phanResult): static
+    {
+        $this->phanResult = $phanResult;
 
         return $this;
     }

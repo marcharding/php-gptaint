@@ -14,28 +14,46 @@ class GptQuery
 
     protected string $projectDir;
     protected string $openAiToken;
-    private string $defaultModel;
+    private string $model;
 
-    public function __construct(string $projectDir, string $openAiToken, string $defaultModel, EntityManagerInterface $entityManager)
+    public function __construct(string $projectDir, string $openAiToken, string $defaultModel, string $mistralAiToken, EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
-        $this->defaultModel = $defaultModel;
+        $this->model = $defaultModel;
         $this->openAiToken = $openAiToken;
+        $this->mistralAiToken = $mistralAiToken;
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $modelToUse = null, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null): GptResult|array
+    public function setModel($model)
     {
-        if (!isset($modelToUse)) {
-            $modelToUse = $this->defaultModel;
+        $this->model = $model;
+    }
+    public function getModel()
+    {
+        return $this->model;
+    }
+
+    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null): GptResult|array
+    {
+        $modelToUse = $this->model;
+
+        if (str_contains($modelToUse, 'mistral')) {
+            $tokenToUse = $this->mistralAiToken;
+        } else {
+            $tokenToUse = $this->openAiToken;
         }
 
         $openAiClient = \OpenAI::factory()
             ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
-            ->withApiKey($this->openAiToken);
+            ->withApiKey($tokenToUse);
 
         if ($modelToUse === 'llama.cpp') {
             $openAiClient->withBaseUri('http://host.docker.internal:8080/v1');
+        }
+
+        if (str_contains($modelToUse, 'mistral')) {
+            $openAiClient->withBaseUri('https://api.mistral.ai/v1');
         }
 
         $openAiClient = $openAiClient->make();
@@ -53,7 +71,7 @@ class GptQuery
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => "$promptMessage $code",
+                    'content' => "$promptMessage \n \n \n $code",
                 ],
             ],
             'functions' => [
@@ -102,14 +120,15 @@ class GptQuery
             $numberOfTokens += count($encoder->encode(json_encode($prompt['functions'])));
         }
 
+        // TODO: The newer models all support at least 16k, remove this
         $modelMapping = [
-            'gpt-3.5-turbo-0613' => [
-                '4k' => 'gpt-3.5-turbo-0613',
-                '16k' => 'gpt-3.5-turbo-16k-0613',
+            'gpt-3.5-turbo-1106' => [
+                '4k' => 'gpt-3.5-turbo-1106',
+                '16k' => 'gpt-3.5-turbo-1106',
             ],
             'gpt-3.5-turbo-0125' => [
                 '4k' => 'gpt-3.5-turbo-0125',
-                '16k' => 'gpt-3.5-turbo-16k-0125',
+                '16k' => 'gpt-3.5-turbo-0125',
             ],
             'gpt-4-1106-preview' => [
                 '4k' => 'gpt-4-1106-preview',
@@ -122,6 +141,14 @@ class GptQuery
             'llama.cpp' => [
                 '4k' => 'llama.cpp',
                 '16k' => 'llama.cpp',
+            ],
+            'mistral-small' => [
+                '4k' => 'mistral-small-latest',
+                '16k' => 'mistral-small-latest',
+            ],
+            'mistral-large' => [
+                '4k' => 'mistral-large-latest',
+                '16k' => 'mistral-large-latest',
             ],
         ];
 
@@ -141,9 +168,15 @@ class GptQuery
             unset($prompt['function_call']);
         }
 
+        if (str_contains($model, 'mistral')) {
+            $prompt['response_format'] = ['type' => 'json_object'];
+            unset($prompt['functions']);
+            unset($prompt['function_call']);
+        }
+
         $response = $openAiClient->chat()->create($prompt);
         $result = $response->choices[0];
-
+        var_dump($result);
         $json = false;
 
         if (isset($result->message->functionCall)) {
@@ -217,7 +250,7 @@ class GptQuery
                 $exploitSuccessful = $json['exploitSuccessful'] ?? false;
             }
         }
-
+        var_dump($json);
         if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)) {
             // TODO: Better error handling
             return [['completeResult' => $completeResult, 'analysisResult' => $analysisResult, 'exploitProbability' => $exploitProbability, 'exploitExample' => $exploitExample], $response->toArray()];
@@ -232,7 +265,7 @@ class GptQuery
         $gptResult->setAnalysisResult($analysisResult);
         $gptResult->setExploitProbability($exploitProbability);
         $gptResult->setExploitExample($exploitExample);
-        $gptResult->setExploitExampleSuccessful($exploitSuccessful ?? false);
+        $gptResult->setExploitExampleSuccessful(filter_var($exploitSuccessful ?? false, FILTER_VALIDATE_BOOLEAN));
         if ($parentGptResult) {
             $gptResult->setGptResultParent($parentGptResult);
         }

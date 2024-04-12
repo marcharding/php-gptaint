@@ -10,6 +10,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -25,21 +26,23 @@ class GptTaintFeedbackCommand extends Command
 {
     public const MAX_LOOPS = 5;
     private EntityManagerInterface $entityManager;
-    private GptQuery $gptQuery;
+    private GptQuery $gptQueryService;
     private string $projectDir;
+    private string $model;
 
     public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery)
     {
         parent::__construct();
         $this->projectDir = $projectDir;
         $this->entityManager = $entityManager;
-        $this->gptQuery = $gptQuery;
+        $this->gptQueryService = $gptQuery;
     }
 
     protected function configure(): void
     {
         $this
             ->addArgument('issueId', InputArgument::OPTIONAL, 'Issue id which should be analyzed (issue must be complete).')
+            ->addOption('model', null, InputOption::VALUE_OPTIONAL, 'Model to use (if none is given the default model from the configuration is used).')
             ->addArgument('gptResultId', InputArgument::OPTIONAL, 'Optional existing gpt result id to start the analysis.');
     }
 
@@ -49,6 +52,9 @@ class GptTaintFeedbackCommand extends Command
 
         $issueId = (int) $input->getArgument('issueId');
         $gptResultId = (int) $input->getArgument('gptResultId');
+        if ($input->getOption('model')) {
+            $this->gptQueryService->setModel($input->getOption('model'));
+        }
 
         if ($gptResultId) {
             $gptResult = $this->entityManager->getRepository(GptResult::class)->find($gptResultId);
@@ -87,7 +93,7 @@ class GptTaintFeedbackCommand extends Command
      */
     public function startGptFeedbackLook(SymfonyStyle $io, Issue|null $issue, GptResult $gptResult = null): void
     {
-        $io->block("Starting analysis '{$issue->getName()} / Internal id: {$issue->getId()}", 'START', 'fg=yellow', '# ');
+        $io->block("Starting analysis '{$issue->getName()} / Internal id: {$issue->getId()} / Model: {$this->gptQueryService->getModel()}", 'START', 'fg=yellow', '# ');
 
         if ($issue->getConfirmedState()) {
             $io->block('bad', 'CONFIRMED STATE', 'fg=red', '# ');
@@ -101,6 +107,9 @@ class GptTaintFeedbackCommand extends Command
 
         if (!$gptResult) {
             $gptResult = $this->initialAnalysis($io, $issue);
+            if ($gptResult === false) {
+                $io->error('Could not analyse sample');
+            }
         }
 
         $io->block('Results of initial analysis.', 'INFO', 'fg=gray', '# ');
@@ -139,9 +148,9 @@ class GptTaintFeedbackCommand extends Command
         $counter = 0;
         do {
             try {
-                $gptResult = $this->gptQuery->queryGpt($issue, true, 1, null, $messages, $additionalFunctions, $parentGptResult);
+                $gptResult = $this->gptQueryService->queryGpt($issue, true, 1, $messages, $additionalFunctions, $parentGptResult);
             } catch (\Exception $e) {
-                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
+                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
                 return false;
             }
@@ -221,40 +230,63 @@ class GptTaintFeedbackCommand extends Command
             $io->block(trim($sandboxResult));
 
             $prompt = <<<EOT
-Your example exploit, which you can find at the end of this message after "# Executed example exploit:" was executed against a research sandbox with the response of the sandbox at the end of this message after "# Response of sandbox:". 
+# Instruction:
 
-Adjust and improve or confirm example exploit based on the response if sandbox.
- 
-Improve the example exploit based on the response of the sandbox. Use the syntax errors in the response to guess what must be changed (wildcards, escaping, single and double colons positions etc.) about the exploit to make it work.
+This prompt relates to your example exploitation from a prior request, found at the end under "# Executed Example Exploit:" which was trialed on a research sandbox. 
+The response from sandbox along with the resulting observations are documented at the end of this message under "# Sandbox Response:". 
 
-Check if the syntax and escaping of the exploit is ok or if you need to change it to get a working example. Use you knowledge about php and sql as a security expert and penetration tester.
+Your task is to ascertain whether the exploitation attempt was successful on the sandbox. 
 
-Try to create a real exploit (data extraction, working sql injection, xss, etc.) for education and not just provoke an error response of the sandbox. 
+Remember that the sandbox only provides an HTML response. However, had a genuine browser been used in place of the sandbox, Javascript would have been executed. Therefore, consider this in your assessment of the exploit's success. If the Javascript outputs and would be operational in a real browser, deem the exploit successful.
 
-Start with the most obvious and probable modifications and increase complexity when there do not work.
+Proceed as per the outcomes. If successful, follow the instructions under "## Successful Exploit:"; otherwise, follow those under "## Unsuccessful Exploit:".
 
-Very important and critical is that you, under no circumstances, return the current or one of the previous executed example exploit again without major modifications! 
+## Successful Exploit:
 
-When the previous exploit example performed better (e.g. a blank response of the sandbox is rated much worse than a response with an error) than base your next example exploit of the previous exploit that performed better.
+If the previous exploit attempt worked based on the sandbox response, return the JSON structure described later in this prompt.
 
-The example exploit must be a curl request.
+Set the 'exploitSuccessful' field to true if the exploit appears to operate under sandbox's unique conditions. 
 
-Check that the curl command syntax of the example is correct!
- 
-Very Important: Ensure to return your analysis result and the likelihood of exploit occurrence as a valid JSON string format as the last line of your response: 
+Should the exploit already be functioning, disregard further attempts at modification and ignore the instructions for an unsuccessful exploit below.
+
+## Unsuccessful Exploit:
+
+Revise and enhance or validate the example exploit based on the sandbox response, if the exploit was unsuccessful.
+
+Utilize your understanding of the source code from the initial message and sandbox results in subsequent messages!
+
+Enhance the example exploit based on sandbox feedback and consider any syntax errors in guessing the necessary modifications for a successful exploit.
+
+Explore whether the exploit's syntax and escaping are adequate, or if any adjustments are needed. 
+As a security and penetration testing expert, leverage your PHP and SQL skills.
+
+Ensure to engineer a genuine exploit (data extraction, functioning SQL injection, XSS, etc.) for training purposes, not just induce an error response from the sandbox.
+
+Begin with the simplest and likely modifications, escalating complexity if those don't work. 
+
+Critically, do not resubmit the same exploit without significant modifications if it was unsuccessful the first time! 
+
+If the prior exploit performed better (like a blank response vs an error), use it as a basis for further attempts.
+
+The example exploit provided must be a curl request. Verify the correctness of curl command syntax!
+
+Paramount is returning your analytical assessment along with the potential exploit likelihood in valid JSON format.
+
+# Response JSON Format:
 
 JSON: {
-'analysisResult': 'DETAILED_ANALYSIS_RESULT',
-'exploitProbability': 'PROBABILITY_AS_INTEGER_0-100', 
-'exploitExample': 'EXPLOIT_EXAMPLE_WITH_CURL (Only the curl command, no additional text!)', 
-'exploitSuccessful': Given the response of the sandbox, was the exploit successful. Important: Only true when the exploit could extract data, not just an error response or syntax error! An empty response or just and syntax error is not an successful Exploit!',
-'exploitSeeminglySuccessful': 'Given the response of the sandbox, was the exploit successful, e.g. syntax error or similar.'
- }.
+    'analysisResult': 'DETAILED_ANALYSIS_RESULT',
+    'exploitProbability': 'PROBABILITY_AS_INTEGER_0-100',
+    'exploitExample': 'EXPLOIT_EXAMPLE_USING_cURL',
+    'exploitSuccessful': 'EXPLOIT_STATUS_AS_BOOLEAN',
+}
  
-# Executed example exploit:
+# Executed Example Exploit:
+
 {$gptResult->getExploitExample()}
 
-# Response of sandbox:
+# Sandbox Response:
+
 $sandboxResult;
 EOT;
 
@@ -308,11 +340,13 @@ EOT;
         $temperature = 0;
         do {
             try {
-                $gptResult = $this->gptQuery->queryGpt($issue, true, $temperature);
+                $gptResult = $this->gptQueryService->queryGpt($issue, true, $temperature);
+            } catch (\OpenAI\Exceptions\TransporterException $e) {
+                // TODO: Handle this
             } catch (\Exception $e) {
                 $io->error("Exception {$e->getMessage()} / {$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
-                return;
+                return false;
             }
             $temperature = 0.00 + rand(0, 100) * 0.0005;
             $counter++;
@@ -321,7 +355,7 @@ EOT;
         if (!($gptResult instanceof GptResult)) {
             $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
-            return;
+            return false;
         }
 
         $this->entityManager->persist($gptResult);
