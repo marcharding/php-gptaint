@@ -14,6 +14,7 @@ services:
             --skip-log-bin
             --skip-external-locking
         container_name: database
+        hostname: mysql
         environment:
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
         entrypoint: >
@@ -27,6 +28,8 @@ services:
               echo 'CREATE DATABASE IF NOT EXISTS myDB;' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'CREATE USER IF NOT EXISTS \"username\"@\"localhost\" IDENTIFIED BY \"password\";' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'GRANT ALL ON myDB.* TO \"username\"@\"localhost\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'CREATE USER IF NOT EXISTS \"username\"@\"%\" IDENTIFIED BY \"password\";' >> /docker-entrypoint-initdb.d/init.sql;
+              echo 'GRANT ALL ON myDB.* TO \"username\"@\"%\";' >> /docker-entrypoint-initdb.d/init.sql;
               echo 'FLUSH PRIVILEGES;' >> /docker-entrypoint-initdb.d/init.sql;
               /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
             "
@@ -38,15 +41,18 @@ services:
             - .env
             - .env.local
         container_name: webserver-app
+        hostname: your_dns_alias
         volumes:
             - .:/var/www/application
+        links:
+            - "db_app"
+            - "db_app:database"
+            - "db_app:mysql"
+            - "db_app:sandbox"
         command:
             - /bin/sh
             - -c
             - |
-                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) database" >> /etc/hosts
-                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) mysql" >> /etc/hosts
-                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) sandbox" >> /etc/hosts
                 echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) sandbox.com" >> /etc/hosts
                 echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) example.com" >> /etc/hosts
                 apache2-foreground
@@ -55,14 +61,16 @@ services:
         container_name: webserver-wordpress
         volumes:
             - ./sandbox:/var/www/application
-            - ./db:/var/www/db
+            - ./db:/var/www/db#
+        links:
+            - "db_app"
+            - "db_app:database"
+            - "db_app:mysql"
+            - "db_app:sandbox"
         command:
             - /bin/sh
             - -c
             - |
-                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) database" >> /etc/hosts
-                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) mysql" >> /etc/hosts
-                echo "$(getent hosts database | tr -s ' ' | cut -d ' ' -f 1) sandbox" >> /etc/hosts
                 echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) sandbox.com" >> /etc/hosts
                 echo "$(getent hosts webserver-wordpress | tr -s ' ' | cut -d ' ' -f 1) example.com" >> /etc/hosts
                 apache2-foreground
