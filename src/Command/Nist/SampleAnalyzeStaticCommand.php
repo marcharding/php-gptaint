@@ -14,10 +14,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Yethee\Tiktoken\EncoderProvider;
 
 #[AsCommand(
-    name: 'app:nist:pslam',
-    description: 'Add a short description for your command',
+    name: 'app:sample:analyze:static',
+    description: 'Analyse all samples in the given directory with the available static analyzers.',
 )]
-class CompareSamplesCommand extends Command
+class SampleAnalyzeStaticCommand extends Command
 {
     private string $projectDir;
     private EntityManagerInterface $entityManager;
@@ -25,7 +25,7 @@ class CompareSamplesCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('sourceDirectory', InputArgument::REQUIRED, 'The input source directories from which the samples are to be analyzed.')
+            ->addArgument('sourceDirectory', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', $this->projectDir.'/data/samples-selection/nist')
             ->addOption('analyzeTypes', null, InputOption::VALUE_OPTIONAL, 'Which analyzer should be used?', 'all');
     }
 

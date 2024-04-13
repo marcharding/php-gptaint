@@ -12,18 +12,19 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 
 #[AsCommand(
-    name: 'app:nist:create-random-samples',
+    name: 'app:samples:create-randomize-test-set',
     description: 'Add a short description for your command',
 )]
-class CreateRandomSamplesCommand extends Command
+class SamplesRandomTestSetCommand extends Command
 {
     private $projectDir;
 
     protected function configure(): void
     {
         $this
-            ->addArgument('sourceDirectories', InputArgument::REQUIRED, 'The input source directories from which to create samples.')
-            ->addOption('amount', null, InputOption::VALUE_OPTIONAL, 'How many samples should be created.', 100);
+            ->addArgument('sourceDirectories', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', glob($this->projectDir.'/data/samples-all/nist/extracted/*', GLOB_ONLYDIR))
+            ->addArgument('targetDirectory', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', $this->projectDir.'/data/samples-selection/nist')
+            ->addOption('amount', null, InputOption::VALUE_OPTIONAL, 'How many samples should be created.', 200);
     }
 
     public function __construct($projectDir)
@@ -35,11 +36,17 @@ class CreateRandomSamplesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        $filesystem = new Filesystem();
 
         $amount = $input->getOption('amount');
 
         $sourceDirectories = $input->getArgument('sourceDirectories');
-        $sourceDirectories = explode(',', $sourceDirectories);
+        if (!is_array($sourceDirectories)) {
+            $sourceDirectories = explode(',', $sourceDirectories);
+        }
+
+        $targetDirectory = $input->getArgument('targetDirectory');
+        $filesystem->mkdir($targetDirectory);
 
         foreach ($sourceDirectories as $sourceDirectory) {
             if (!is_dir($sourceDirectory)) {
@@ -53,8 +60,6 @@ class CreateRandomSamplesCommand extends Command
 
         foreach ($sourceDirectories as $sourceDirectory) {
             $targetDirectoryBaseName = basename($sourceDirectory);
-            $targetDirectory = $this->projectDir.'/data/nist/samples_selection/'.$targetDirectoryBaseName.'/';
-            $filesystem->mkdir($targetDirectory, 0777);
 
             $sortedTestCases = [];
             $sourceDirectoryIterator = new \DirectoryIterator($sourceDirectory);
@@ -88,7 +93,8 @@ class CreateRandomSamplesCommand extends Command
 
             foreach ($randomizedTestCases as $state => $testCases) {
                 foreach ($testCases as $testCase) {
-                    $filesystem->mirror($testCase, $targetDirectory.basename($testCase));
+                    $basename = basename($testCase);
+                    $filesystem->mirror($testCase, "{$targetDirectory}/{$basename}/");
                 }
             }
 

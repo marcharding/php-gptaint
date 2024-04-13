@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 #[AsCommand(
     name: 'app:samples:load-samples-preset',
@@ -20,7 +21,7 @@ class SamplesLoadSamplesPresetCommand extends Command
 
     private $samplePreset = [
         '254587-v1.0.0',
-        '254912 -v1.0.0',
+        '254912-v1.0.0',
         '258774-v1.0.0',
         '263976-v1.0.0',
         '277835-v1.0.0',
@@ -110,7 +111,7 @@ class SamplesLoadSamplesPresetCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('sourceDirectory', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', $this->projectDir.'/data/samples-all/nist')
+            ->addArgument('sourceDirectory', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', $this->projectDir.'/data/samples-all/nist/extracted')
             ->addArgument('targetDirectory', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', $this->projectDir.'/data/samples-selection/nist');
     }
 
@@ -125,12 +126,24 @@ class SamplesLoadSamplesPresetCommand extends Command
         $filesystem->mkdir($sourceDirectory);
         $filesystem->mkdir($targetDirectory);
 
+        $finder = new Finder();
+        $directories = $finder->directories()->in($sourceDirectory)->depth(0);
+
         foreach ($this->samplePreset as $samplePreset) {
-            if (!$filesystem->exists("{$sourceDirectory}/{$samplePreset}")) {
-                $io->warning("{$samplePreset} not found.");
-                continue;
+            $found = false;
+            $samplePresetDirectory = null;
+            foreach ($directories as $samplePresetDirectory) {
+                $samplePresetDirectory = $samplePresetDirectory->getRealPath();
+                if (is_dir("{$samplePresetDirectory}/{$samplePreset}")) {
+                    $found = true;
+                    break;
+                }
             }
-            $filesystem->mirror("{$sourceDirectory}/{$samplePreset}", "{$targetDirectory}/{$samplePreset}");
+            if (!$found) {
+                $io->warning("{$samplePreset} not found.");
+            } else {
+                $filesystem->mirror("{$samplePresetDirectory}/{$samplePreset}", "{$targetDirectory}/{$samplePreset}");
+            }
         }
 
         $io->success('Sample presets created.');

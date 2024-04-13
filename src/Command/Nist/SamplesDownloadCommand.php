@@ -6,15 +6,17 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'app:download:nist:samples',
-    description: 'Download nist samples',
+    name: 'app:samples:download',
+    description: 'Downloads the three nist sample sets (this takes a while!).',
 )]
-class DownloadNistSamplesCommand extends Command
+class SamplesDownloadCommand extends Command
 {
     private $projectDir;
 
@@ -22,6 +24,13 @@ class DownloadNistSamplesCommand extends Command
     {
         $this->projectDir = $projectDir;
         parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
+            ->addArgument('targetDirectory', InputArgument::OPTIONAL, 'The input source directories from which the samples are to be analyzed.', $this->projectDir.'/data/samples-all/nist/zip')
+            ->addOption('amount', null, InputOption::VALUE_OPTIONAL, 'How many samples should be created.', 100);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -40,10 +49,9 @@ class DownloadNistSamplesCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
 
-        $downloadFolder = "{$this->projectDir}/data/nist/samples_zip/";
-
-        if (!is_dir($downloadFolder)) {
-            mkdir($downloadFolder, 0755, true);
+        $targetDirectory = $input->getArgument('targetDirectory');
+        if (!is_dir($targetDirectory)) {
+            mkdir($targetDirectory, 0755, true);
         }
 
         $client = new Client([
@@ -61,9 +69,9 @@ class DownloadNistSamplesCommand extends Command
 
         $pool = new \GuzzleHttp\Pool($client, $requests($zips), [
             'concurrency' => 50,
-            'fulfilled' => function ($response, $index) use ($zips, $downloadFolder, $io) {
+            'fulfilled' => function ($response, $index) use ($zips, $targetDirectory, $io) {
                 $filename = basename($zips[$index]);
-                file_put_contents("$downloadFolder/$filename", $response->getBody());
+                file_put_contents("$targetDirectory/$filename", $response->getBody());
                 $io->success('Downloaded '.$zips[$index]);
             },
             'rejected' => function ($reason, $index) use ($io) {

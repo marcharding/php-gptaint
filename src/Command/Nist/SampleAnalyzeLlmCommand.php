@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Command\Util;
+namespace App\Command\Nist;
 
 use App\Entity\GptResult;
 use App\Entity\Issue;
@@ -19,10 +19,10 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Process\Process;
 
 #[AsCommand(
-    name: 'app:gpt-taint:feedback',
-    description: 'Query gpt with the code path fragments and get a probability on how expoitable the code it.',
+    name: 'app:sample:analyze:llm',
+    description: 'Query the given llm model and let it determine if the sample it attackable.',
 )]
-class GptTaintFeedbackCommand extends Command
+class SampleAnalyzeLlmCommand extends Command
 {
     public const MAX_LOOPS = 5;
     private EntityManagerInterface $entityManager;
@@ -173,7 +173,7 @@ class GptTaintFeedbackCommand extends Command
     {
         // get source directory of sample
         $finder = new Finder();
-        $sourceDirectories = $finder->files()->in("{$this->projectDir}/data/nist/samples_selection")->directories()->name($issue->getName())->getIterator();
+        $sourceDirectories = $finder->files()->in("{$this->projectDir}/data/samples-selection/nist")->directories()->name($issue->getName())->getIterator();
         $sourceDirectories->rewind();
         $sourceDirectory = $sourceDirectories->current()->getRealPath();
 
