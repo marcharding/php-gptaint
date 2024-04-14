@@ -19,6 +19,7 @@
                         <li>Precision: {{ metrics.precision }}</li>
                         <li>Specificity: {{ metrics.specificity }}</li>
                         <li>F1: {{ metrics.f1 }}</li>
+                        <li>Time (s): {{ metrics.time / 1000 }}</li>
                     </ul>
                 </div>
             {% endfor %}

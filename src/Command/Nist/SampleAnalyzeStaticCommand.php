@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Yethee\Tiktoken\EncoderProvider;
 
 #[AsCommand(
@@ -100,8 +101,11 @@ EOT;
             $io->writeln(PHP_EOL);
             $io->writeln('Sample '.basename($testCase));
 
+            $stopwatch = new Stopwatch();
+
             // Psalm run
             if ($analyzeTypesActive['psalm'] === true) {
+                $stopwatch->start('psalm');
                 $io->writeln('Psalm is analysing '.basename($testCase));
                 $psalmConfigXml = $this->projectDir.'/var/psalm.xml';
                 file_put_contents($psalmConfigXml, strtr($psalmConfig, ['%folder%' => "{$testCase}/src/"]));
@@ -114,12 +118,14 @@ EOT;
                 // true when no errors were found, false when there were errors
                 $psalmResultBool = false !== strpos(implode(PHP_EOL, $psalmResult), 'No errors found!');
                 $io->writeln('Psalm result is "'.($psalmResultBool === false ? 'Taint found' : 'No taint found').'"');
+                $psalmTime = $stopwatch->stop('psalm');
             }
             // /Psalm run
 
             // Snyk run (if TOKEN is available)
             if ($analyzeTypesActive['snyk'] === true) {
                 if (getenv('SNYK_TOKEN') && false === true) {
+                    $stopwatch->start('snyk');
                     $io->writeln('Snyk is analysing '.basename($testCase));
                     $snykResult = [];
                     $time = microtime(true);
@@ -130,12 +136,14 @@ EOT;
                     // true when no errors were found, false when there were errors
                     $snykResultBool = false !== strpos(implode(PHP_EOL, $snykResult), 'No issues were found');
                     $io->writeln('Snyk result is "'.($snykResultBool === false ? 'Taint found' : 'No taint found').'"');
+                    $snykTime = $stopwatch->stop('snyk');
                 }
             }
             // /Snyk run
 
             // Phan run
             if ($analyzeTypesActive['phan'] === true) {
+                $stopwatch->start('phan');
                 $phanFileList = $this->projectDir.'/var/phan.txt';
                 file_put_contents($phanFileList, $testCasePhpFile, LOCK_EX);
                 $io->writeln('Phan is analysing '.basename($testCase));
@@ -150,6 +158,7 @@ EOT;
                 // true when no errors were found, false when there were errors
                 $phanResultBool = false !== strpos(implode(PHP_EOL, $phanResult), 'SecurityCheck');
                 $io->writeln('Phan result is "'.($phanResultBool === false ? 'Taint found' : 'No taint found').'"');
+                $phanTime = $stopwatch->stop('phan');
             }
             // /Snyk run
 
@@ -178,14 +187,17 @@ EOT;
             if ($analyzeTypesActive['psalm'] === true) {
                 $issueEntity->setPsalmResult(implode(PHP_EOL, $psalmResult));
                 $issueEntity->setPsalmState($psalmResultBool === false ? Issue::StateBad : Issue::StateGood);
+                $issueEntity->setPsalmTime($psalmTime->getDuration());
             }
             if ($analyzeTypesActive['snyk'] === true) {
                 $issueEntity->setSnykResult(implode(PHP_EOL, $snykResult));
                 $issueEntity->setSnykState($snykResultBool === false ? Issue::StateBad : Issue::StateGood);
+                $issueEntity->setSnykTime($snykTime->getDuration());
             }
             if ($analyzeTypesActive['phan'] === true) {
                 $issueEntity->setPhanResult(implode(PHP_EOL, $phanResult));
                 $issueEntity->setPhanState($phanResultBool === false ? Issue::StateBad : Issue::StateGood);
+                $issueEntity->setPhanTime($phanTime->getDuration());
             }
             $issueEntity->setConfirmedState($state === 'bad' ? Issue::StateBad : Issue::StateGood);
             $issueEntity->setExtractedCodePath($code);

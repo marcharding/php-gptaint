@@ -69,6 +69,15 @@ class Issue
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $phanResult = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $phanTime = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $psalmTime = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $snykTime = null;
+
     public function __construct()
     {
         $this->gptResults = new ArrayCollection();
@@ -311,6 +320,42 @@ class Issue
     public function setPhanResult(?string $phanResult): static
     {
         $this->phanResult = $phanResult;
+
+        return $this;
+    }
+
+    public function getPhanTime(): ?int
+    {
+        return $this->phanTime;
+    }
+
+    public function setPhanTime(?int $phanTime): static
+    {
+        $this->phanTime = $phanTime;
+
+        return $this;
+    }
+
+    public function getPsalmTime(): ?int
+    {
+        return $this->psalmTime;
+    }
+
+    public function setPsalmTime(?int $psalmTime): static
+    {
+        $this->psalmTime = $psalmTime;
+
+        return $this;
+    }
+
+    public function getSnykTime(): ?int
+    {
+        return $this->snykTime;
+    }
+
+    public function setSnykTime(?int $snykTime): static
+    {
+        $this->snykTime = $snykTime;
 
         return $this;
     }

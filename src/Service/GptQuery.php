@@ -6,6 +6,7 @@ use App\Entity\GptResult;
 use App\Entity\Issue;
 use App\Entity\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Yethee\Tiktoken\EncoderProvider;
 
 class GptQuery
@@ -174,9 +175,13 @@ class GptQuery
             unset($prompt['function_call']);
         }
 
+        $stopwatch = new Stopwatch();
+        $stopwatch->start('query');
         $response = $openAiClient->chat()->create($prompt);
+        $event = $stopwatch->stop('query');
         $result = $response->choices[0];
-        var_dump($result);
+        $duration = $event->getDuration();
+
         $json = false;
 
         if (isset($result->message->functionCall)) {
@@ -251,7 +256,7 @@ class GptQuery
             }
         }
         var_dump($json);
-        if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !isset($exploitExample)) {
+        if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !is_numeric($exploitProbability) || !isset($exploitExample)) {
             // TODO: Better error handling
             return [['completeResult' => $completeResult, 'analysisResult' => $analysisResult, 'exploitProbability' => $exploitProbability, 'exploitExample' => $exploitExample], $response->toArray()];
         }
@@ -266,6 +271,9 @@ class GptQuery
         $gptResult->setExploitProbability($exploitProbability);
         $gptResult->setExploitExample($exploitExample);
         $gptResult->setExploitExampleSuccessful(filter_var($exploitSuccessful ?? false, FILTER_VALIDATE_BOOLEAN));
+        $gptResult->setTime($duration);
+        $gptResult->setPromptTokens($response['usage']['prompt_tokens']);
+        $gptResult->setCompletionTokens($response['usage']['completion_tokens']);
         if ($parentGptResult) {
             $gptResult->setGptResultParent($parentGptResult);
         }

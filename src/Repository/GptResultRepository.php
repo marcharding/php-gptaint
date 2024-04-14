@@ -74,6 +74,18 @@ class GptResultRepository extends ServiceEntityRepository
         return $lastGptResult;
     }
 
+    public function getTimeSum($issue, $model = 'gpt-3.5-turbo%-0613'): int
+    {
+        $gptResult = $this->findLastGptResultByIssue($issue, $model);
+        $time = 0;
+        while ($gptResult) {
+            $time += $gptResult->getTime();
+            $gptResult = $this->findLastGptResultByParentGptResult($gptResult);
+        }
+
+        return $time;
+    }
+
     //    /**
     //     * @return GptResult[] Returns an array of GptResult objects
     //     */

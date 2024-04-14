@@ -46,6 +46,15 @@ class GptResult
     #[ORM\OneToOne(targetEntity: self::class, cascade: ['persist', 'remove'])]
     private ?self $gptResultParent = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $time = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $promptTokens = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $completionTokens = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -179,6 +188,42 @@ class GptResult
     public function setGptResultParent(?self $gptResultParent): static
     {
         $this->gptResultParent = $gptResultParent;
+
+        return $this;
+    }
+
+    public function getTime(): ?int
+    {
+        return $this->time;
+    }
+
+    public function setTime(?int $time): static
+    {
+        $this->time = $time;
+
+        return $this;
+    }
+
+    public function getPromptTokens(): ?int
+    {
+        return $this->promptTokens;
+    }
+
+    public function setPromptTokens(?int $promptTokens): static
+    {
+        $this->promptTokens = $promptTokens;
+
+        return $this;
+    }
+
+    public function getCompletionTokens(): ?int
+    {
+        return $this->completionTokens;
+    }
+
+    public function setCompletionTokens(?int $completionTokens): static
+    {
+        $this->completionTokens = $completionTokens;
 
         return $this;
     }

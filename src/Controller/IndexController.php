@@ -35,17 +35,21 @@ class IndexController extends AbstractController
                         'trueNegatives' => 0,
                         'falsePositives' => 0,
                         'falseNegatives' => 0,
+                        'time' => 0,
                     ];
                 }
                 switch ($method) {
                     case 'psalm':
                         $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $issue->getPsalmState());
+                        $statistics[$method]['time'] += $issue->getPsalmTime();
                         break;
                     case 'snyk':
                         $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $issue->getSnykState());
+                        $statistics[$method]['time'] += $issue->getSnykTime();
                         break;
                     case 'phan':
                         $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $issue->getPhanState());
+                        $statistics[$method]['time'] += $issue->getPhanTime();
                         break;
                     case 'gpt-4-0125-preview':
                     case 'gpt-3.5-turbo-0125':
@@ -54,6 +58,7 @@ class IndexController extends AbstractController
                         if ($gptResult) {
                             $statistics[$method] = $this->getConfusionTable($statistics[$method], $issue->getConfirmedState(), $gptResult->isExploitExampleSuccessful());
                         }
+                        $statistics[$method]['time'] += $gptResultRepository->getTimeSum($issue, $method);
                         break;
                     default:
                         break;
@@ -93,7 +98,7 @@ class IndexController extends AbstractController
 
     private function calculateStatitics($results)
     {
-        $count = array_sum($results);
+        $count = $results['truePositive'] + $results['trueNegatives'] + $results['falsePositives'] + $results['falseNegatives'];
 
         $results['sum'] = $count;
 
