@@ -31,7 +31,7 @@ class IndexController extends AbstractController
             foreach ($methods as $method) {
                 if (!isset($statistics[$method])) {
                     $statistics[$method] = [
-                        'truePositive' => 0,
+                        'truePositives' => 0,
                         'trueNegatives' => 0,
                         'falsePositives' => 0,
                         'falseNegatives' => 0,
@@ -79,7 +79,7 @@ class IndexController extends AbstractController
     {
         if ($confirmedState === 1) {
             if ($state) {
-                $table['truePositive']++;
+                $table['truePositives']++;
             } else {
                 $table['falseNegatives']++;
             }
@@ -98,21 +98,21 @@ class IndexController extends AbstractController
 
     private function calculateStatitics($results)
     {
-        $count = $results['truePositive'] + $results['trueNegatives'] + $results['falsePositives'] + $results['falseNegatives'];
+        $count = $results['truePositives'] + $results['trueNegatives'] + $results['falsePositives'] + $results['falseNegatives'];
 
         $results['sum'] = $count;
 
         $results['count'] = $count;
 
-        $results['sensitivity'] = $results['truePositive'] != 0 ? $results['truePositive'] / 25 : 0;
+        $results['sensitivity'] = $results['truePositives'] != 0 ? $results['truePositives'] / 25 : 0;
 
-        $results['precision'] = ($results['truePositive'] + $results['falsePositives']) != 0 ? $results['truePositive'] / ($results['truePositive'] + $results['falsePositives']) : 0;
+        $results['precision'] = ($results['truePositives'] + $results['falsePositives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falsePositives']) : 0;
 
-        $results['accuracy'] = $count != 0 ? ($results['truePositive'] + $results['trueNegatives']) / $count : 0;
+        $results['accuracy'] = $count != 0 ? ($results['truePositives'] + $results['trueNegatives']) / $count : 0;
 
         $results['specificity'] = ($results['trueNegatives'] + $results['falsePositives']) != 0 ? $results['trueNegatives'] / ($results['trueNegatives'] + $results['falsePositives']) : 0;
 
-        $results['f1'] = ($results['truePositive'] + $results['falsePositives'] + $results['falseNegatives']) != 0 ? 2 * $results['truePositive'] / (2 * $results['truePositive'] + $results['falsePositives'] + $results['falseNegatives']) : 0;
+        $results['f1'] = ($results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) != 0 ? 2 * $results['truePositives'] / (2 * $results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) : 0;
 
         return $results;
     }
