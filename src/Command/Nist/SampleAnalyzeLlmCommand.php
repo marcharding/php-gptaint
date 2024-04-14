@@ -16,6 +16,7 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 
 #[AsCommand(
@@ -62,7 +63,7 @@ class SampleAnalyzeLlmCommand extends Command
 
         if ($issueId) {
             $issue = $this->entityManager->getRepository(Issue::class)->find($issueId);
-            $this->startGptFeedbackLook($io, $issue, $gptResult ?? null);
+            $this->startGptFeedbackLoop($io, $issue, $gptResult ?? null);
         }
 
         if (!$issueId) {
@@ -76,7 +77,7 @@ class SampleAnalyzeLlmCommand extends Command
 
                 $issues = $this->entityManager->getRepository(Issue::class)->findAll();
                 foreach ($issues as $issue) {
-                    $this->startGptFeedbackLook($io, $issue);
+                    $this->startGptFeedbackLoop($io, $issue);
                 }
             } else {
                 $output->writeln('Canceled command.');
@@ -91,7 +92,7 @@ class SampleAnalyzeLlmCommand extends Command
     /**
      * @param Issue|object|null $issue
      */
-    public function startGptFeedbackLook(SymfonyStyle $io, Issue|null $issue, GptResult $gptResult = null): void
+    public function startGptFeedbackLoop(SymfonyStyle $io, Issue|null $issue, GptResult $gptResult = null): void
     {
         $io->block("Starting analysis '{$issue->getName()} / Internal id: {$issue->getId()} / Model: {$this->gptQueryService->getModel()}", 'START', 'fg=yellow', '# ');
 
@@ -109,6 +110,7 @@ class SampleAnalyzeLlmCommand extends Command
             $gptResult = $this->initialAnalysis($io, $issue);
             if ($gptResult === false) {
                 $io->error('Could not analyse sample');
+                return;
             }
         }
 
@@ -208,9 +210,13 @@ class SampleAnalyzeLlmCommand extends Command
                 system("mysql -hmysql -uroot < '{$sqlFile}'");
             }
         }
-
         $process = Process::fromShellCommandline($gptResult->getExploitExample());
-        $process->run();
+        $process->setTimeout(59);
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException $e) {
+            return false;
+        }
 
         if (!$process->isSuccessful()) {
             return false;
@@ -344,7 +350,7 @@ EOT;
             } catch (\OpenAI\Exceptions\TransporterException $e) {
                 // TODO: Handle this
             } catch (\Exception $e) {
-                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
+                $io->error("Exception {$e->getMessage()} / {$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
                 return false;
             }
@@ -353,7 +359,7 @@ EOT;
         } while (!($gptResult instanceof GptResult) && $counter <= 3);
 
         if (!($gptResult instanceof GptResult)) {
-            $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
+            $io->error("{$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return false;
         }
