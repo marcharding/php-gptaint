@@ -167,6 +167,8 @@ class GptQuery
             $prompt['grammar'] = file_get_contents("{$this->projectDir}/config/grammar/jsonStructure.gbnf");
             unset($prompt['functions']);
             unset($prompt['function_call']);
+            // prevent endless generation, see https://github.com/ggerganov/llama.cpp/pull/6638
+            $prompt['n_predict'] = 2048;
         }
 
         if (str_contains($model, 'mistral')) {
