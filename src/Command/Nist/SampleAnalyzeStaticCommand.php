@@ -175,14 +175,18 @@ EOT;
                 $note = 'Description not found.';
             }
 
-            $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['filepath' => $testCasePhpFile]);
+            // normalize filepath based on project root
+            $pattern = '#^'.preg_quote($this->projectDir, '/').'#';
+            $normalizedCestCasePhpFile = preg_replace($pattern, '', $testCasePhpFile, 1);
+
+            $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['filepath' => $normalizedCestCasePhpFile]);
             if (!$issueEntity) {
                 $issueEntity = new Issue();
             }
             $issueEntity->setName(basename($testCase));
-            $issueEntity->setFilepath($testCasePhpFile);
+            $issueEntity->setFilepath($normalizedCestCasePhpFile);
             $issueEntity->setCweId($cweId);
-            $issueEntity->setFile(basename($testCasePhpFile));
+            $issueEntity->setFile(basename($normalizedCestCasePhpFile));
             $issueEntity->setNote($note);
             if ($analyzeTypesActive['psalm'] === true) {
                 $issueEntity->setPsalmResult(implode(PHP_EOL, $psalmResult));

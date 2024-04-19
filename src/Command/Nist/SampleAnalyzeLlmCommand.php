@@ -171,13 +171,10 @@ class SampleAnalyzeLlmCommand extends Command
         return $gptResult;
     }
 
-    public function setupSandbox($issue, $gptResult)
+    public function setupSandbox(Issue $issue, GptResult $gptResult)
     {
         // get source directory of sample
-        $finder = new Finder();
-        $sourceDirectories = $finder->files()->in("{$this->projectDir}/data/samples-selection/nist")->directories()->name($issue->getName())->getIterator();
-        $sourceDirectories->rewind();
-        $sourceDirectory = $sourceDirectories->current()->getRealPath();
+        $sourceDirectory = dirname(dirname($issue->getFilepath()));
 
         // find sample files (named index.php or sample.php)
         $finder = new Finder();
