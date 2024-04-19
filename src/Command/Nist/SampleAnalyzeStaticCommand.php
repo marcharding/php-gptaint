@@ -145,7 +145,7 @@ EOT;
             if ($analyzeTypesActive['phan'] === true) {
                 $stopwatch->start('phan');
                 $phanFileList = $this->projectDir.'/var/phan.txt';
-                file_put_contents($phanFileList, $testCasePhpFile, LOCK_EX);
+                file_put_contents($phanFileList, $testCasePhpFile);
                 $io->writeln('Phan is analysing '.basename($testCase));
                 $phanResult = [];
                 $time = microtime(true);
