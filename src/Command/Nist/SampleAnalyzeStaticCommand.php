@@ -156,7 +156,7 @@ EOT;
                 $timeElapsed = round(microtime(true) - $time, 4);
                 $phanResult[] = PHP_EOL."# {$timeElapsed} seconds";
                 // true when no errors were found, false when there were errors
-                $phanResultBool = false !== strpos(implode(PHP_EOL, $phanResult), 'SecurityCheck');
+                $phanResultBool = false === strpos(implode(PHP_EOL, $phanResult), 'SecurityCheck');
                 $io->writeln('Phan result is "'.($phanResultBool === false ? 'Taint found' : 'No taint found').'"');
                 $phanTime = $stopwatch->stop('phan');
             }
