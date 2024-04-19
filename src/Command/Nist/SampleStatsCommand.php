@@ -6,7 +6,6 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -16,18 +15,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class SampleStatsCommand extends Command
 {
-    private $projectDir;
 
     protected function configure(): void
     {
         $this
             ->addArgument('sourceDirectories', InputArgument::REQUIRED, 'The input source directories from which to create samples.')
-            ->addOption('amount', null, InputOption::VALUE_OPTIONAL, 'How many samples should be created.', 100);
+        ;
     }
 
-    public function __construct($projectDir)
+    public function __construct()
     {
-        $this->projectDir = $projectDir;
         parent::__construct();
     }
 
@@ -46,7 +43,8 @@ class SampleStatsCommand extends Command
             }
         }
 
-        $stats = [];
+        $types = [];
+        $cweIds = [];
 
         foreach ($sourceDirectories as $sourceDirectory) {
             $sourceDirectoryIterator = new \DirectoryIterator($sourceDirectory);
@@ -62,17 +60,58 @@ class SampleStatsCommand extends Command
                 $fileContent = file_get_contents("{$directory->getRealPath()}/readme.md");
                 $metaData = $this->extractMetadata($fileContent);
 
-                if (!isset($stats[$metaData['Patterns']['Context']])) {
-                    $stats[$metaData['Patterns']['Context']] = [];
+                if (!isset($cweIds[$metaData['Patterns']['Context']])) {
+                    $cweIds[$metaData['Patterns']['Context']] = [];
                 }
 
                 $cweId = $sarifManifest['runs'][0]['results'][0]['ruleId'];
-                if (!isset($stats[$metaData['Patterns']['Context']][$cweId])) {
-                    $stats[$metaData['Patterns']['Context']][$cweId] = 0;
+                if (!isset($cweIds[$metaData['Patterns']['Context']][$cweId])) {
+                    $cweIds[$metaData['Patterns']['Context']][$cweId] = 0;
                 }
-                ++$stats[$metaData['Patterns']['Context']][$cweId];
+                ++$cweIds[$metaData['Patterns']['Context']][$cweId];
+
+                $types['Source'][] = $metaData['Patterns']['Source'];
+                $types['Sanitization'][] = $metaData['Patterns']['Sanitization'];
+                $types['Filters complete'][] = $metaData['Patterns']['Filters complete'];
+                $types['Context'][] = $metaData['Patterns']['Context'];
+                $types['Sink'][] = $metaData['Patterns']['Sink'];
+
+                $types[$metaData['Patterns']['Dataflow']] = $metaData['Patterns']['Dataflow'];
             }
-            var_dump($stats);
+
+            $types['Source'] = array_unique($types['Source']);
+            $types['Sanitization'] = array_unique($types['Sanitization']);
+            $types['Filters complete'] = array_unique($types['Filters complete']);
+            $types['Context'] = array_unique($types['Context']);
+            $types['Sink'] = array_unique($types['Sink']);
+
+            asort($types['Source']);
+            asort($types['Sanitization']);
+            asort($types['Filters complete']);
+            asort($types['Context']);
+            asort($types['Sink']);
+
+            $io->section('CWE');
+            foreach ($cweIds as $context => $cweIdEntry) {
+                $currentCweIds = array_key_first($cweIdEntry);
+                $currentCweIdCount = reset($cweIdEntry);
+                $io->writeln("Context {$context}");
+                $io->writeln("Classified as {$currentCweIds}.");
+                $io->writeln("{$currentCweIdCount} occurrences.");
+                $io->write(PHP_EOL);
+            }
+
+            foreach ($types as $type => $items) {
+                if (!is_array($items)) {
+                    continue;
+                }
+                $count = count($items);
+                $io->section("$type ($count)");
+                foreach ($items as $item) {
+                    $io->writeln($item);
+                }
+            }
+
             $io->success('Finished.');
         }
 
