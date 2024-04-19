@@ -174,7 +174,7 @@ class SampleAnalyzeLlmCommand extends Command
     public function setupSandbox(Issue $issue, GptResult $gptResult)
     {
         // get source directory of sample
-        $sourceDirectory = dirname(dirname($issue->getFilepath()));
+        $sourceDirectory = $this->projectDir.dirname(dirname($issue->getFilepath()));
 
         // find sample files (named index.php or sample.php)
         $finder = new Finder();
