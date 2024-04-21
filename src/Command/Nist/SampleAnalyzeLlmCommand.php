@@ -123,7 +123,11 @@ class SampleAnalyzeLlmCommand extends Command
             $io->block('Starting feedback loop.', 'INFO', 'fg=gray', '# ');
 
             $result = $this->startFeedbackLoop($io, $issue, $gptResult, $previousMessages = []);
+            if ($result === false) {
+                $io->error('Could not fully analyse sample.');
 
+                return;
+            }
             $io->block('', 'FINAL SANDBOX RESPONSE', 'fg=cyan', '# ');
 
             if ($result['gptResult']->isExploitExampleSuccessful()) {
@@ -318,6 +322,10 @@ EOT;
 
         $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? [], $gptResult);
 
+        if (!($gptResult instanceof GptResult)) {
+            return false;
+        }
+
         if ($gptResult->isExploitExampleSuccessful() || $numberOfUserMessage > self::MAX_LOOPS) {
             return [
                 'gptResult' => $gptResult,
@@ -341,12 +349,15 @@ EOT;
     {
         $counter = 0;
         $temperature = 0;
+
         do {
             try {
                 $gptResult = $this->gptQueryService->queryGpt($issue, true, $temperature);
             } catch (\OpenAI\Exceptions\TransporterException $e) {
-                // TODO: Handle this
+                // TODO: Handle these better
+                return false;
             } catch (\Exception $e) {
+                // TODO: Handle these better
                 $io->error("Exception {$e->getMessage()} / {$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
                 return false;
