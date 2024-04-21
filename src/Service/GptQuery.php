@@ -37,9 +37,9 @@ class GptQuery
 
     public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null): GptResult|array
     {
-        $modelToUse = $this->model;
+        $model = $this->model;
 
-        if (str_contains($modelToUse, 'mistral')) {
+        if (str_contains($model, 'mistral')) {
             $tokenToUse = $this->mistralAiToken;
         } else {
             $tokenToUse = $this->openAiToken;
@@ -49,11 +49,11 @@ class GptQuery
             ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
             ->withApiKey($tokenToUse);
 
-        if ($modelToUse === 'llama.cpp') {
+        if (str_contains($model, 'llama.cpp')) {
             $openAiClient->withBaseUri('http://host.docker.internal:8080/v1');
         }
 
-        if (str_contains($modelToUse, 'mistral')) {
+        if (str_contains($model, 'mistral')) {
             $openAiClient->withBaseUri('https://api.mistral.ai/v1');
         }
 
@@ -90,6 +90,10 @@ class GptQuery
                                 'type' => 'number',
                                 'description' => 'The probability of an exploit on a scale of 0 to 100.',
                             ],
+                            'exploitSuccessful' => [
+                                'type' => 'boolean',
+                                'description' => 'Based on the security analysis: Is the exploit successful or not?',
+                            ],
                             'exploitExample' => [
                                 'type' => 'string',
                                 'description' => 'Example of a potential attack as a bash script or curl command for educational purposes. Important, just return the script, nothing else, no further explanation or description.',
@@ -116,54 +120,11 @@ class GptQuery
         }
 
         $numberOfTokens = $issue->getEstimatedTokens() + count($encoder->encode(json_encode($prompt['messages'])));
-
         if (isset($prompt['functions'])) {
             $numberOfTokens += count($encoder->encode(json_encode($prompt['functions'])));
         }
 
-        // TODO: The newer models all support at least 16k, remove this
-        $modelMapping = [
-            'gpt-3.5-turbo-1106' => [
-                '4k' => 'gpt-3.5-turbo-1106',
-                '16k' => 'gpt-3.5-turbo-1106',
-            ],
-            'gpt-3.5-turbo-0125' => [
-                '4k' => 'gpt-3.5-turbo-0125',
-                '16k' => 'gpt-3.5-turbo-0125',
-            ],
-            'gpt-4-1106-preview' => [
-                '4k' => 'gpt-4-1106-preview',
-                '16k' => 'gpt-4-1106-preview',
-            ],
-            'gpt-4-0125-preview' => [
-                '4k' => 'gpt-4-0125-preview',
-                '16k' => 'gpt-4-0125-preview',
-            ],
-            'llama.cpp' => [
-                '4k' => 'llama.cpp',
-                '16k' => 'llama.cpp',
-            ],
-            'mistral-small' => [
-                '4k' => 'mistral-small-latest',
-                '16k' => 'mistral-small-latest',
-            ],
-            'mistral-large' => [
-                '4k' => 'mistral-large-latest',
-                '16k' => 'mistral-large-latest',
-            ],
-        ];
-
-        if ($numberOfTokens > 16385) {
-            return false;
-        } elseif ($numberOfTokens > 4096) {
-            $model = $modelMapping[$modelToUse]['16k'];
-        } else {
-            $model = $modelMapping[$modelToUse]['4k'];
-        }
-
-        $prompt['model'] = $model;
-
-        if ($model === 'llama.cpp') {
+        if (str_contains($model, 'llama.cpp')) {
             $prompt['grammar'] = file_get_contents("{$this->projectDir}/config/grammar/jsonStructure.gbnf");
             unset($prompt['functions']);
             unset($prompt['function_call']);
@@ -176,6 +137,11 @@ class GptQuery
             unset($prompt['functions']);
             unset($prompt['function_call']);
         }
+
+        $model = explode('/', $model);
+        $model = end($model);
+
+        $prompt['model'] = $model;
 
         $stopwatch = new Stopwatch();
         $stopwatch->start('query');
@@ -257,7 +223,7 @@ class GptQuery
                 $exploitSuccessful = $json['exploitSuccessful'] ?? false;
             }
         }
-        var_dump($json);
+
         if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !is_numeric($exploitProbability) || !isset($exploitExample)) {
             // TODO: Better error handling
             return [['completeResult' => $completeResult, 'analysisResult' => $analysisResult, 'exploitProbability' => $exploitProbability, 'exploitExample' => $exploitExample], $response->toArray()];
