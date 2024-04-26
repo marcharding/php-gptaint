@@ -177,7 +177,7 @@ class SampleAnalyzeLlmCommand extends Command
         } while (!($gptResult instanceof GptResult) && $counter <= 5);
 
         if (!($gptResult instanceof GptResult)) {
-            $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
+            $io->error("{$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return false;
         }
