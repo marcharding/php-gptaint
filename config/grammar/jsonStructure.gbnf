@@ -1,5 +1,5 @@
 root ::= jsonStructure
-jsonStructure ::= "{"   ws   "\"analysisResult\":"   ws   string   ","   ws   "\"exploitProbability\":"   ws   number   ","   ws   "\"exploitExample\":"   ws   string   ","   ws   "\"exploitSuccessful\":"   ws   boolean   ","   ws   "\"exploitSeeminglySuccessful\":"   ws   boolean   "}"
+jsonStructure ::= "{"   ws   "\"analysisResult\":"   ws   string   ","   ws   "\"exploitProbability\":"   ws   number   ","   ws   "\"exploitExample\":"   ws   string   ","   ws   "\"exploitSuccessful\":"   ws   boolean   "}"
 jsonStructurelist ::= "[]" | "["   ws   jsonStructure   (","   ws   jsonStructure)*   "]"
 string ::= "\""   ([^"]*)   "\""
 boolean ::= "true" | "false"

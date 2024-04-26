@@ -3,5 +3,4 @@ interface jsonStructure {
     exploitProbability: number;
     exploitExample: string;
     exploitSuccessful: boolean;
-    exploitSeeminglySuccessful: boolean;
 }

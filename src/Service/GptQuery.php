@@ -90,13 +90,13 @@ class GptQuery
                                 'type' => 'number',
                                 'description' => 'The probability of an exploit on a scale of 0 to 100.',
                             ],
-                            'exploitSuccessful' => [
-                                'type' => 'boolean',
-                                'description' => 'Based on the security analysis: Is the exploit successful or not?',
-                            ],
                             'exploitExample' => [
                                 'type' => 'string',
                                 'description' => 'Example of a potential attack as a bash script or curl command for educational purposes. Important, just return the script, nothing else, no further explanation or description.',
+                            ],
+                            'exploitSuccessful' => [
+                                'type' => 'boolean',
+                                'description' => 'Based on the security analysis: Is the exploit successful or not?',
                             ],
                         ],
                     ],
