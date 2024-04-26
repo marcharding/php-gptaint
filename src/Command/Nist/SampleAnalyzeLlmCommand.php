@@ -30,6 +30,7 @@ class SampleAnalyzeLlmCommand extends Command
     private GptQuery $gptQueryService;
     private string $projectDir;
     private string $model;
+    private bool $randomized = false;
 
     public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery)
     {
@@ -44,6 +45,7 @@ class SampleAnalyzeLlmCommand extends Command
         $this
             ->addArgument('issueId', InputArgument::OPTIONAL, 'Issue id which should be analyzed (issue must be complete).')
             ->addOption('model', null, InputOption::VALUE_OPTIONAL, 'Model to use (if none is given the default model from the configuration is used).')
+            ->addOption('randomized', null, InputOption::VALUE_NONE)
             ->addArgument('gptResultId', InputArgument::OPTIONAL, 'Optional existing gpt result id to start the analysis.');
     }
 
@@ -53,9 +55,16 @@ class SampleAnalyzeLlmCommand extends Command
 
         $issueId = (int) $input->getArgument('issueId');
         $gptResultId = (int) $input->getArgument('gptResultId');
+
         if ($input->getOption('model')) {
             $this->gptQueryService->setModel($input->getOption('model'));
         }
+
+        if ($input->getOption('randomized')) {
+            $this->randomized = true;
+        }
+
+        $this->gptQueryService->setRandomize($this->randomized);
 
         if ($gptResultId) {
             $gptResult = $this->entityManager->getRepository(GptResult::class)->find($gptResultId);
@@ -102,7 +111,11 @@ class SampleAnalyzeLlmCommand extends Command
             $io->block('good', 'CONFIRMED STATE', 'fg=green', '# ');
         }
 
-        $io->block(PHP_EOL.PHP_EOL.$issue->getCode().PHP_EOL, 'CODE', 'fg=white', '# ');
+        if($this->randomized){
+            $io->block(PHP_EOL.PHP_EOL.$issue->getCodeRandomized().PHP_EOL, 'CODE', 'fg=white', '# ');
+        } else {
+            $io->block(PHP_EOL.PHP_EOL.$issue->getCode().PHP_EOL, 'CODE', 'fg=white', '# ');
+        }
 
         $io->block('Starting initial analysis.', 'INFO', 'fg=gray', '# ');
 
@@ -185,7 +198,9 @@ class SampleAnalyzeLlmCommand extends Command
         $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php'])->getIterator();
         $sourceFiles->rewind();
         $sourceFile = $sourceFiles->current()->getRealPath();
-
+        if ($this->randomized) {
+            $sourceFile = "{$sourceFile}.randomized";
+        }
         // rename to index.php for easier prompt and more consistent results
         $targetFile = "{$this->projectDir}/sandbox/public/index.php";
 

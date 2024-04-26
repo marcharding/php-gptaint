@@ -16,6 +16,7 @@ class GptQuery
     protected string $projectDir;
     protected string $openAiToken;
     private string $model;
+    private string $randomize;
 
     public function __construct(string $projectDir, string $openAiToken, string $defaultModel, string $mistralAiToken, EntityManagerInterface $entityManager)
     {
@@ -24,15 +25,27 @@ class GptQuery
         $this->model = $defaultModel;
         $this->openAiToken = $openAiToken;
         $this->mistralAiToken = $mistralAiToken;
+        $this->randomize = false;
     }
 
     public function setModel($model)
     {
         $this->model = $model;
     }
+
     public function getModel()
     {
         return $this->model;
+    }
+
+    public function setRandomize($randomize)
+    {
+        $this->randomize = $randomize;
+    }
+
+    public function isRandomized()
+    {
+        return $this->randomize;
     }
 
     public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null): GptResult|array
@@ -62,7 +75,11 @@ class GptQuery
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
-        $code = $issue->getCode();
+        if ($this->isRandomized()) {
+            $code = $issue->getCodeRandomized();
+        } else {
+            $code = $issue->getCode();
+        }
 
         $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => 999, 'active' => 1]);
 
