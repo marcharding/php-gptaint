@@ -102,7 +102,7 @@ class SampleAnalyzeLlmCommand extends Command
             $io->block('good', 'CONFIRMED STATE', 'fg=green', '# ');
         }
 
-        $io->block(PHP_EOL.PHP_EOL.$issue->getExtractedCodePath().PHP_EOL, 'CODE', 'fg=white', '# ');
+        $io->block(PHP_EOL.PHP_EOL.$issue->getCode().PHP_EOL, 'CODE', 'fg=white', '# ');
 
         $io->block('Starting initial analysis.', 'INFO', 'fg=gray', '# ');
 

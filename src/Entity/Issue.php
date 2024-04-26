@@ -21,7 +21,7 @@ class Issue
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    private ?string $extractedCodePath = null;
+    private ?string $code = null;
 
     #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]
     #[ORM\OrderBy(['id' => 'DESC'])]
@@ -78,6 +78,9 @@ class Issue
     #[ORM\Column(nullable: true)]
     private ?int $snykTime = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $codeRandomized = null;
+
     public function __construct()
     {
         $this->gptResults = new ArrayCollection();
@@ -100,14 +103,14 @@ class Issue
         return $this;
     }
 
-    public function getExtractedCodePath(): ?string
+    public function getCode(): ?string
     {
-        return $this->extractedCodePath;
+        return $this->code;
     }
 
-    public function setExtractedCodePath(string $extractedCodePath): static
+    public function setCode(string $code): static
     {
-        $this->extractedCodePath = $extractedCodePath;
+        $this->code = $code;
 
         return $this;
     }
@@ -356,6 +359,18 @@ class Issue
     public function setSnykTime(?int $snykTime): static
     {
         $this->snykTime = $snykTime;
+
+        return $this;
+    }
+
+    public function getCodeRandomized(): ?string
+    {
+        return $this->codeRandomized;
+    }
+
+    public function setCodeRandomized(?string $codeRandomized): static
+    {
+        $this->codeRandomized = $codeRandomized;
 
         return $this;
     }

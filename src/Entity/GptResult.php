@@ -147,7 +147,7 @@ class GptResult
         return [
             [
                 'role' => 'user',
-                'content' => "{$this->getPromptMessage()} {$this->getIssue()->getExtractedCodePath()}",
+                'content' => "{$this->getPromptMessage()} {$this->getIssue()->getCode()}",
             ],
             [
                 'role' => 'assistant',

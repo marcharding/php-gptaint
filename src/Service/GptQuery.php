@@ -62,7 +62,7 @@ class GptQuery
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
-        $code = $issue->getExtractedCodePath();
+        $code = $issue->getCode();
 
         $promptEntity = $this->entityManager->getRepository(Prompt::class)->findOneBy(['type' => 999, 'active' => 1]);
 

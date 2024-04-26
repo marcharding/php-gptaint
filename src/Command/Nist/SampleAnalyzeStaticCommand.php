@@ -80,6 +80,18 @@ class SampleAnalyzeStaticCommand extends Command
             // simple stripped down, only one file, just to calculate the toknes
             $testCasePhpFiles = glob("{$testCase}/src/*.php");
             $testCasePhpFile = reset($testCasePhpFiles);
+
+            // create file with randomized names for llms analyzation
+            copy($testCasePhpFile, "{$testCasePhpFile}.randomized.php");
+            exec("php vendor/bin/rector process {$testCasePhpFile}.randomized.php 2>&1", $rectorResult);
+            rename("{$testCasePhpFile}.randomized.php", "{$testCasePhpFile}.randomized");
+
+            $io->writeln(PHP_EOL);
+            $io->writeln('Sample '.basename($testCase));
+
+            $stopwatch = new Stopwatch();
+
+            // Psalm run
             $psalmConfig = <<<'EOT'
 <?xml version="1.0"?>
 <psalm
@@ -96,14 +108,6 @@ class SampleAnalyzeStaticCommand extends Command
     </projectFiles>
 </psalm>
 EOT;
-
-            // Add or update code entity
-            $io->writeln(PHP_EOL);
-            $io->writeln('Sample '.basename($testCase));
-
-            $stopwatch = new Stopwatch();
-
-            // Psalm run
             if ($analyzeTypesActive['psalm'] === true) {
                 $stopwatch->start('psalm');
                 $io->writeln('Psalm is analysing '.basename($testCase));
@@ -168,6 +172,12 @@ EOT;
             $strippedDownTestCase = str_replace('; ', ';'.PHP_EOL, $strippedDownTestCase);
             $code = $strippedDownTestCase;
 
+            $strippedDownTestCase = php_strip_whitespace("{$testCasePhpFile}.randomized");
+            $strippedDownTestCase = preg_replace('/<!--(.|\s)*?-->/', '', $strippedDownTestCase);
+            $strippedDownTestCase = trim($strippedDownTestCase);
+            $strippedDownTestCase = str_replace('; ', ';'.PHP_EOL, $strippedDownTestCase);
+            $codeRandomized = $strippedDownTestCase;
+
             $regex = '/<!--\n#(?P<comment>.+?)\n-->/s';
             if (preg_match($regex, file_get_contents($testCasePhpFile), $matches)) {
                 $note = $matches['comment'];
@@ -179,6 +189,7 @@ EOT;
             $pattern = '#^'.preg_quote($this->projectDir, '/').'#';
             $normalizedCestCasePhpFile = preg_replace($pattern, '', $testCasePhpFile, 1);
 
+            // Add or update code entity
             $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['filepath' => $normalizedCestCasePhpFile]);
             if (!$issueEntity) {
                 $issueEntity = new Issue();
@@ -204,7 +215,8 @@ EOT;
                 $issueEntity->setPhanTime($phanTime->getDuration());
             }
             $issueEntity->setConfirmedState($state === 'bad' ? Issue::StateBad : Issue::StateGood);
-            $issueEntity->setExtractedCodePath($code);
+            $issueEntity->setCode($code);
+            $issueEntity->setCodeRandomized($codeRandomized);
             $issueEntity->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
             $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
 
