@@ -303,6 +303,10 @@ class GptQuery
                 $value = $matches['value'];
                 $value = rtrim($value, "\n");
                 $value = rtrim($value, ',');
+                // remove quotes from start/end if they are a matching pair (residuals of the json encoding)
+                if (preg_match('/^([\'"])(.*?)\1$/', $value, $quoteMatches)) {
+                    $value = $quoteMatches[2];
+                }
                 $result[$key] = $value;
             }
         }
