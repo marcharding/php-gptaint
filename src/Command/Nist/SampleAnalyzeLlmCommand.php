@@ -326,10 +326,6 @@ EOT;
                     'type' => 'boolean',
                     'description' => 'Given the response of the sandbox, was the exploit successful. Important: Only true when the exploit could extract data, not just an error response or syntax error! An empty response or just and syntax error is not an successful Exploit!',
                 ],
-                'exploitSeeminglySuccessful' => [
-                    'type' => 'boolean',
-                    'description' => 'Given the response of the sandbox, was the exploit successful, e.g. syntax error or similar.',
-                ],
             ];
         }
 
