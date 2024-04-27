@@ -1,0 +1,104 @@
+# GPTaint
+
+## Comparing Static Taint Analyzers Against Large Language Models (LLMs)
+
+This PHP application provides a basic analysis suite designed to test the performance of large language models (LLMs) against static analyzers in identifying security vulnerabilities in PHP code. Currently, it operates on single files from the test set; however, it could be adapted to scan real codebases by extracting relevant code fragments and using these as samples. Preliminary work has already started in the `App\Service\CodeExtractor` namespace.
+
+## Setup & Configuration
+
+The application is fully dockerized. To install and set up, follow the typical Docker setup instructions:
+
+### Settings and API Tokens
+
+Your API tokens must be set in your `.env` file. Refer to the included `.env` file for details, and place your tokens/settings in a new `.env.local` file.
+
+### Using Colima on macOS:
+
+```bash
+colima start --vm-type=vz --mount-type=virtiofs --cpu 4 --memory 4
+docker compose up --remove-orphans
+```
+
+After all containers have started, you must create the initial database.
+
+To execute commands within the main app container, use:
+```bash
+docker exec -it webserver-app bash
+```
+Alternatively, execute the commands via Docker Compose. The following examples demonstrate this approach.
+
+### Create the Database Schema
+
+```bash
+docker compose exec webserver_app php bin/console doctrine:schema:create --force
+```
+
+### Running the Tests
+
+1. Download the samples from the NIST database:
+
+```bash
+docker compose exec webserver_app php bin/console app:samples:download
+```
+
+2. Extract the samples:
+
+```bash
+docker compose exec webserver_app php bin/console app:samples:extract
+```
+
+3. Generate a randomized test set or load an existing test set:
+
+```bash
+docker compose exec webserver_app php bin/console app:samples:create-randomize-test-set
+```
+
+```bash
+docker compose exec webserver_app php bin/console app:samples:load-samples-preset
+```
+
+4. Analyze the sample with static analyzers:
+
+```bash
+docker compose exec webserver_app php bin/console app:sample:analyze:static --analyzeTypes=phan,psalm /var/www/application/data/samples-all/nist/foobar
+```
+
+5. Analyze the samples with online LLMs (currently supporting OpenAI or Mistral):
+
+```bash
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-3.5-turbo-0125
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-3.5-turbo-0125 --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-3-70b --randomized
+```
+
+## Using Other LLMs with OpenAI Compatible APIs (e.g., LlamaCPP)
+
+### Start Llama via LlamaCPP (https://github.com/ggerganov/llama.cpp)
+
+```bash
+./server --ctx-size 8192 -m models/Meta-Llama-3-8B-Instruct-Q6_K.gguf
+./server --ctx-size 4096 -m models/Phi-3-mini-4k-instruct-q4.gguf
+```
+
+### Run Tests for the Specific LLM
+
+```bash
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-3-70b --randomized
+```
+
+### Helper Commands:
+
+To get statistics on the used contexts, sinks, etc.:
+
+```bash
+docker compose exec webserver_app php bin/console app:nist:stats /var/www/application/data/nist/samples_all/2022-05-12-php-test-suite-sqli-v1-0-0
+docker compose exec webserver_app php bin/console app:nist:stats /var/www/application/data/nist/samples_all/2022-08-02-php-test-suite-xss-v1-0-0
+```
+
+To export results:
+
+```bash
+docker compose exec webserver_app php bin/console app:sample:results:export:csv foobar.csv
+```
