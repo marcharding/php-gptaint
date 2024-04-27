@@ -173,26 +173,14 @@ class GptQuery
         if (isset($result->message->functionCall)) {
             $jsonString = $result->message->functionCall->arguments;
 
-            // TODO: Is this the best we can do?
+            // fix prompt formats / tokens (remove residuals like <|eot_id|> from the retrieved json)
+            $jsonString = preg_replace("#<\|[a-z_]+\|>#ism", '', $jsonString);
+
             $json = json_decode($jsonString, true);
-
-            if ($json === null) {
-                $pattern = '#"analysisResult":\s*"(?P<analysisResult>.*?)",\s*"exploitProbability":\s*(?P<exploitProbability>\d+),\s*"exploitExample":\s*"(?P<exploitExample>.*?)"(,\s*"exploitSuccessful":\s*"(?P<exploitSuccessful>.*?)")?#ism';
-                $matches = [];
-                if (preg_match($pattern, $jsonString, $matches)) {
-                    $json = [
-                        'analysisResult' => $matches['analysisResult'],
-                        'exploitProbability' => (int) $matches['exploitProbability'],
-                        'exploitExample' => $matches['exploitExample'] ?? 'Could not get exploit example',
-                        'exploitSuccessful' => $matches['exploitSuccessful'] ?? false,
-                    ];
-                }
-            }
-
             $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
             $exploitProbability = $json['exploitProbability'] ?? null;
 
-            // TODO: Sometime some values are not set in the json response, try to get them via regex
+            // TODO: Sometime only some values are not set in the json response, try to get them via regex
             // TODO: Refactor this into a better regex and reuseable function
             if (!isset($json['exploitProbability'])) {
                 $pattern = '#(?<exploitProbability>\d+)?(%)#ism';
@@ -207,38 +195,17 @@ class GptQuery
             $exploitSuccessful = $json['exploitSuccessful'] ?? false;
         }
 
-        if ($json === false) {
-            $lines = explode("\n", $result->message->content);
-            $lastLine = end($lines);
-            $regex = '/(?<!")([a-zA-Z0-9_]+)(?!")(?=:)/i';
-            $lastLine = preg_replace($regex, '"$1"', $lastLine);
-            $json = json_decode($lastLine, true);
-            if ($json !== false) {
-                $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
-                $exploitProbability = $json['exploitProbability'] ?? null;
-                $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
-                $exploitSuccessful = $json['exploitSuccessful'] ?? false;
-            }
-            $completeResult = $result->message->content;
-        }
-
-        if ($json === false) {
-            $pattern = '/exploitProbability":\s*"(\d+)"/';
-            $matches = [];
-            if (preg_match($pattern, $result->message->content, $matches)) {
-                $analysisResult = $result->message->content;
-                $exploitProbability = intval($matches[1]);
-            }
-            $completeResult = $result->message->content;
-        }
-
+        // try to parse message content as json (e.g. llama.ccp grammar or other models that return just json)
         if (empty($json)) {
-            $json = json_decode(str_replace(",\n", ',', $result->message->content), true);
+            $jsonString = $result->message->content;
+            $jsonString = preg_replace("#<\|[a-z_]+\|>#ism", '', $jsonString);
+            $json = json_decode($jsonString, true);
             if ($json !== false) {
                 $analysisResult = $json['analysisResult'] ?? 'Could not get analysis result';
                 $exploitProbability = $json['exploitProbability'] ?? null;
                 $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
                 $exploitSuccessful = $json['exploitSuccessful'] ?? false;
+                $completeResult = $json['analysisResult'] ?? 'Could not get analysis result';
             }
         }
 
@@ -249,6 +216,7 @@ class GptQuery
                 $exploitProbability = $json['exploitProbability'] ?? null;
                 $exploitExample = $json['exploitExample'] ?? 'Could not get exploit example';
                 $exploitSuccessful = $json['exploitSuccessful'] ?? false;
+                $completeResult = $json['analysisResult'] ?? 'Could not get analysis result';
             }
         }
 
@@ -281,8 +249,8 @@ class GptQuery
     {
         $keys = array_keys($prompt[0]['parameters']['properties']);
 
-        // fix prompt formats / tokens
-        $string = str_replace(['<|eot_id|>', '<|endoftext|>', '<|end|>'], ['', '', ''], $string);
+        // fix prompt formats / tokens (remove residuals like <|eot_id|> from the retrieved json)
+        $string = preg_replace("#<\|[a-z_]+\|>#ism", '', $string);
 
         $result = [];
 
@@ -301,13 +269,15 @@ class GptQuery
 
             if (isset($matches['value'])) {
                 $value = $matches['value'];
+                $value = explode("\n", $value);
+                $value = reset($value);
                 $value = rtrim($value, "\n");
-                $value = rtrim($value, ',');
+                $value = rtrim($value, ' ,');
                 // remove quotes from start/end if they are a matching pair (residuals of the json encoding)
                 if (preg_match('/^([\'"])(.*?)\1$/', $value, $quoteMatches)) {
                     $value = $quoteMatches[2];
                 }
-                $result[$key] = $value;
+                $result[$key] = trim($value);
             }
         }
 
