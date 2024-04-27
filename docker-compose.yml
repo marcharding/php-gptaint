@@ -37,6 +37,7 @@ services:
             - "6612:3306"
     webserver_app:
         build: .docker/httpd
+        working_dir: /var/www/application
         env_file:
             - .env
             - .env.local

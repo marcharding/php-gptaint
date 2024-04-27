@@ -76,3 +76,5 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN curl -L https://github.com/snyk/cli/releases/download/v1.1274.0/snyk-linux-arm64 -o snyk && \
     chmod +x ./snyk && \
     mv ./snyk /usr/local/bin/
+
+WORKDIR /var/www/application
