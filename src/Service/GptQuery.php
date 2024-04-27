@@ -162,6 +162,11 @@ class GptQuery
         $model = explode('/', $model);
         $model = end($model);
 
+        $modeName = $model;
+        if ($this->isRandomized()) {
+            $modeName .= ' (randomized)';
+        }
+
         $prompt['model'] = $model;
 
         $stopwatch = new Stopwatch();
@@ -230,7 +235,7 @@ class GptQuery
 
         $gptResult = new GptResult();
         $gptResult->setIssue($issue);
-        $gptResult->setGptVersion($model);
+        $gptResult->setGptVersion($modeName);
         $gptResult->setPrompt($promptEntity);
         $gptResult->setPromptMessage($promptMessage);
         $gptResult->setResponse($completeResult);
