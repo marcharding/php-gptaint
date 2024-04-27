@@ -143,6 +143,9 @@ class GptQuery
         }
 
         if (str_contains($model, 'llama.cpp')) {
+            // apply grammar to get the model to return json
+            // see https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md and https://mychen76.medium.com/practical-techniques-to-constraint-llm-output-in-json-format-e3e72396c670
+            // simple conversion with this online tool at https://grammar.intrinsiclabs.ai/.
             $prompt['grammar'] = file_get_contents("{$this->projectDir}/config/grammar/jsonStructure.gbnf");
             unset($prompt['functions']);
             unset($prompt['function_call']);
