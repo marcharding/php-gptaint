@@ -165,14 +165,16 @@ class SampleAnalyzeLlmCommand extends Command
         }
 
         $counter = 0;
+        $temperature = 0;
         do {
             try {
-                $gptResult = $this->gptQueryService->queryGpt($issue, true, 1, $messages, $additionalFunctions, $parentGptResult);
+                $gptResult = $this->gptQueryService->queryGpt($issue, true, $temperature, $messages, $additionalFunctions, $parentGptResult);
             } catch (\Exception $e) {
                 $io->error("Exception {$e->getMessage()} / {$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
                 return false;
             }
+            $temperature += 0.05;
             $counter++;
         } while (!($gptResult instanceof GptResult) && $counter <= 5);
 
@@ -373,7 +375,7 @@ EOT;
 
                 return false;
             }
-            $temperature = 0.00 + rand(0, 100) * 0.0005;
+            $temperature += 0.05;
             $counter++;
         } while (!($gptResult instanceof GptResult) && $counter <= 3);
 
