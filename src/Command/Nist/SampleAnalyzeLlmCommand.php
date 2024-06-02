@@ -195,9 +195,9 @@ class SampleAnalyzeLlmCommand extends Command
         // get source directory of sample
         $sourceDirectory = $this->projectDir.dirname(dirname($issue->getFilepath()));
 
-        // find sample files (named index.php or sample.php)
+        // find sample files (named index.php or sample.php first, than any php file (legacy format with CWE_* names)
         $finder = new Finder();
-        $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php'])->getIterator();
+        $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php', 'CWE_*.php'])->getIterator();
         $sourceFiles->rewind();
         $sourceFile = $sourceFiles->current()->getRealPath();
         if ($this->randomized) {
