@@ -7,8 +7,6 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class Stats
 {
-
-
     public function __construct(EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
@@ -32,6 +30,27 @@ class Stats
         $statistics = [];
 
         foreach ($issues as $issue) {
+            $tests = $gptResultRepository->findAllFeedbackGptResultByIssue($issue, 'llama-3-8b');
+
+            $tmp = [];
+            $tmp[$issue->getName()]['state'] = $issue->getConfirmedState();
+            $tmp[$issue->getName()]['isExploitExampleSuccessful'] = [];
+            $tmp[$issue->getName()]['gptResult'] = [];
+
+            foreach ($tests as $item) {
+                $tmp[$issue->getName()]['isExploitExampleSuccessful'][] = $item->isExploitExampleSuccessful();
+                $tmp[$issue->getName()]['gptResult'][] = $item;
+            }
+
+            foreach ($tmp as $item) {
+                if (count(array_unique($item['isExploitExampleSuccessful'])) !== 1) {
+                    dump($issue->getName());
+                    foreach ($item['gptResult'] as $gptResult) {
+                        dump($item['isExploitExampleSuccessful']);
+                    }
+                }
+            }
+
             foreach ($analyzers as $analyzer) {
                 if (!isset($statistics[$analyzer])) {
                     $statistics[$analyzer] = [
@@ -76,6 +95,7 @@ class Stats
                 unset($statistics[$analyzer]);
             }
         }
+
         return $statistics;
     }
 
