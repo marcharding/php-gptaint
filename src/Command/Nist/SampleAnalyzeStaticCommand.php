@@ -73,9 +73,15 @@ class SampleAnalyzeStaticCommand extends Command
             $sarifManifestContent = file_get_contents("{$directory->getRealPath()}/manifest.sarif");
             $sarifManifest = json_decode($sarifManifestContent, true);
 
-            $cweId = (int) $sarifManifest['runs'][0]['results'][0]['taxa'][0]['id'];
-            $state = $sarifManifest['runs'][0]['properties']['state'];
             $testCase = $directory->getRealPath();
+            $io->writeln(PHP_EOL);
+            $io->writeln('Sample '.basename($testCase));
+
+            $cweId = null;
+            if (isset($sarifManifest['runs'][0]['results'][0])) {
+                $cweId = (int) $sarifManifest['runs'][0]['results'][0]['taxa'][0]['id'];
+            }
+            $state = $sarifManifest['runs'][0]['properties']['state'];
 
             // simple stripped down, only one file, just to calculate the toknes
             $testCasePhpFiles = glob("{$testCase}/src/*.php");
@@ -85,9 +91,6 @@ class SampleAnalyzeStaticCommand extends Command
             copy($testCasePhpFile, "{$testCasePhpFile}.randomized.php");
             exec("php vendor/bin/rector process {$testCasePhpFile}.randomized.php 2>&1", $rectorResult);
             rename("{$testCasePhpFile}.randomized.php", "{$testCasePhpFile}.randomized");
-
-            $io->writeln(PHP_EOL);
-            $io->writeln('Sample '.basename($testCase));
 
             $stopwatch = new Stopwatch();
 
