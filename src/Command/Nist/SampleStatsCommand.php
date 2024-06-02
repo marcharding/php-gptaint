@@ -48,6 +48,8 @@ class SampleStatsCommand extends Command
 
         foreach ($sourceDirectories as $sourceDirectory) {
             $sourceDirectoryIterator = new \DirectoryIterator($sourceDirectory);
+            $good = 0;
+            $bad = 0;
 
             foreach ($sourceDirectoryIterator as $directory) {
                 if (!is_file("{$directory->getRealPath()}/manifest.sarif")) {
@@ -75,8 +77,15 @@ class SampleStatsCommand extends Command
                 $types['Filters complete'][] = $metaData['Patterns']['Filters complete'];
                 $types['Context'][] = $metaData['Patterns']['Context'];
                 $types['Sink'][] = $metaData['Patterns']['Sink'];
+                $types['Dataflow'][] = $metaData['Patterns']['Dataflow'];
 
-                $types[$metaData['Patterns']['Dataflow']] = $metaData['Patterns']['Dataflow'];
+                if (str_contains($fileContent, 'State: Bad')) {
+                    $bad++;
+                }
+
+                if (str_contains($fileContent, 'State: Good')) {
+                    $good++;
+                }
             }
 
             $types['Source'] = array_unique($types['Source']);
@@ -84,12 +93,18 @@ class SampleStatsCommand extends Command
             $types['Filters complete'] = array_unique($types['Filters complete']);
             $types['Context'] = array_unique($types['Context']);
             $types['Sink'] = array_unique($types['Sink']);
+            $types['Dataflow'] = array_unique($types['Dataflow']);
 
             asort($types['Source']);
             asort($types['Sanitization']);
             asort($types['Filters complete']);
             asort($types['Context']);
             asort($types['Sink']);
+            asort($types['Dataflow']);
+
+            $io->section('Good/Bad split');
+            $io->writeln("Good: {$good}");
+            $io->writeln("Bad: {$bad}");
 
             $io->section('CWE');
             foreach ($cweIds as $context => $cweIdEntry) {
