@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 #[AsCommand(
     name: 'app:samples:create-randomize-test-set',
@@ -69,56 +70,76 @@ class SamplesRandomTestSetCommand extends Command
                     continue;
                 }
 
-                $fileContent = file_get_contents("{$directory->getRealPath()}/readme.md");
-                $metaData = $this->extractMetadata($fileContent);
+                if (is_file("{$directory->getRealPath()}/readme.md")) {
+                    $fileContent = file_get_contents("{$directory->getRealPath()}/readme.md");
+                    $metaData = $this->extractMetadata($fileContent);
 
-                $keep = [
-                    'mysqli_real_query_method_prm__<$>(db)',
-                    'print_func',
-                    // 'pdo_prepare_prm__<$>(pdo)',
-                    'vprintf_prm__<s>(This%s)',
-                    // 'pg_query_prm__<$>(db)',
-                    'trigger_error_prm__<c>(E_USER_ERROR)',
-                    'pdo_query_prm__<$>(pdo)',
-                    'mysqli_real_query_prm__<$>(db)',
-                    'mysqli_prepare_prm__<$>(db)',
-                    'printf_func_prm__<s>(Print this: %s)',
-                    'vprintf_prm__<s>(This%d)',
-                    'exit',
-                    // 'db2_exec_prm__<$>(db)',
-                    'printf_func_prm__<s>(Print this: %d)',
-                    'echo_func',
-                    // 'sqlsrv_query_prm__<$>(db)',
-                    // 'db2_prepare_prm__<$>(db)',
-                    'user_error_prm_',
-                    // 'mssql_sqlsrv_prepare_prm__<$>(db)',
-                    'mysqli_multi_query_prm__<$>(db)',
-                    // 'pg_send_query_prm__<$>(db)',
-                    'mysqli_multi_query_method_prm__<$>(db)',
-                    // 'sqlite3_query_prm__<$>(db)',
-                ];
-                if (count(array_filter($keep, function ($item) use ($metaData) {
-                    return str_starts_with($metaData['Patterns']['Sink'], $item);
-                })) === 0) {
-                    continue;
-                }
+                    $keep = [
+                        'mysqli_real_query_method_prm__<$>(db)',
+                        'print_func',
+                        // 'pdo_prepare_prm__<$>(pdo)',
+                        'vprintf_prm__<s>(This%s)',
+                        // 'pg_query_prm__<$>(db)',
+                        'trigger_error_prm__<c>(E_USER_ERROR)',
+                        'pdo_query_prm__<$>(pdo)',
+                        'mysqli_real_query_prm__<$>(db)',
+                        'mysqli_prepare_prm__<$>(db)',
+                        'printf_func_prm__<s>(Print this: %s)',
+                        'vprintf_prm__<s>(This%d)',
+                        'exit',
+                        // 'db2_exec_prm__<$>(db)',
+                        'printf_func_prm__<s>(Print this: %d)',
+                        'echo_func',
+                        // 'sqlsrv_query_prm__<$>(db)',
+                        // 'db2_prepare_prm__<$>(db)',
+                        'user_error_prm_',
+                        // 'mssql_sqlsrv_prepare_prm__<$>(db)',
+                        'mysqli_multi_query_prm__<$>(db)',
+                        // 'pg_send_query_prm__<$>(db)',
+                        'mysqli_multi_query_method_prm__<$>(db)',
+                        // 'sqlite3_query_prm__<$>(db)',
+                    ];
+                    if (count(array_filter($keep, function ($item) use ($metaData) {
+                        return str_starts_with($metaData['Patterns']['Sink'], $item);
+                    })) === 0) {
+                        continue;
+                    }
 
-                $keep = [
-                    'sql_apostrophe',
-                    'sql_quotes',
-                    'xss_apostrophe',
-                    'xss_html_param_a',
-                    'xss_html_param',
-                    'xss_javascript_no_enclosure',
-                    'xss_javascript',
-                    'xss_quotes',
-                    'sql_plain',
-                    'xss_plain',
-                ];
-                if (count(array_filter($keep, function ($item) use ($metaData) {
-                    return str_starts_with($metaData['Patterns']['Context'], $item);
-                })) === 0) {
-                    continue;
+                    $keep = [
+                        'sql_apostrophe',
+                        'sql_quotes',
+                        'xss_apostrophe',
+                        'xss_html_param_a',
+                        'xss_html_param',
+                        'xss_javascript_no_enclosure',
+                        'xss_javascript',
+                        'xss_quotes',
+                        'sql_plain',
+                        'xss_plain',
+                    ];
+                    if (count(array_filter($keep, function ($item) use ($metaData) {
+                        return str_starts_with($metaData['Patterns']['Context'], $item);
+                    })) === 0) {
+                        continue;
+                    }
+                } else {
+                    $finder = new Finder();
+                    $sourceFiles = $finder->in($directory->getRealPath())->files()->name(['sample.php', 'index.php', 'CWE_*.php'])->getIterator();
+                    $sourceFiles->rewind();
+                    $sourceFile = $sourceFiles->current()->getRealPath();
+                    $sourceFileContent = file_get_contents($sourceFile);
+                    $excludes = [
+                        '/tmp/tainted.php',
+                        '/tmp/tainted.txt',
+                        'users.xml',
+                        'ldap_connect',
+                        'mysql_connect',
+                    ];
+                    foreach ($excludes as $exclude) {
+                        if (str_contains($sourceFileContent, $exclude)) {
+                            continue 2;
+                        }
+                    }
                 }
 
                 $sarifManifestContent = file_get_contents("{$directory->getRealPath()}/manifest.sarif");
