@@ -53,6 +53,19 @@ class GptResultRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findAllGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): array
+    {
+        return $this->createQueryBuilder('g')
+            ->where('g.gptResultParent IS NULL')
+            ->andWhere('g.issue = :issue')
+            ->andWhere('g.gptVersion LIKE :model')
+            ->setParameter('issue', $issue)
+            ->setParameter('model', $model)
+            ->orderBy('g.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findLastGptResultByParentGptResult($gptResult): GptResult|null
     {
         return $this->createQueryBuilder('g')
@@ -72,6 +85,21 @@ class GptResultRepository extends ServiceEntityRepository
         }
 
         return $lastGptResult;
+    }
+
+    public function findAllFeedbackGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): array
+    {
+        $allGptResults = [];
+        $gptResults = $lastGptResult = $this->findAllGptResultByIssue($issue, $model);
+        foreach ($gptResults as $gptResult) {
+            while ($gptResult) {
+                $lastGptResult = $gptResult;
+                $gptResult = $this->findLastGptResultByParentGptResult($gptResult);
+            }
+            $allGptResults[] = $lastGptResult;
+        }
+
+        return $allGptResults;
     }
 
     public function getTimeSum($issue, $model = 'gpt-3.5-turbo%-0613'): int

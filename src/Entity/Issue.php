@@ -60,7 +60,7 @@ class Issue
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?int $CweId = null;
 
     #[ORM\Column(nullable: true)]
@@ -296,7 +296,7 @@ class Issue
         return $this->CweId;
     }
 
-    public function setCweId(int $CweId): static
+    public function setCweId(?int $CweId): static
     {
         $this->CweId = $CweId;
 
