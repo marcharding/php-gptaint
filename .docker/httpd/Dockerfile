@@ -46,8 +46,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-in
     pdo_mysql \
     zip \
     opcache \
-    xsl \
-    ast
+    xsl
 
 # Set up Apache server name
 RUN echo "ServerName localhost" | tee /etc/apache2/conf-available/fqdn.conf && a2enconf fqdn
