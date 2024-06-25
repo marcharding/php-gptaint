@@ -59,7 +59,7 @@ class GptQuery
         }
 
         $openAiClient = \OpenAI::factory()
-            ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 120, 'connect_timeout' => 30]))
+            ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 360, 'connect_timeout' => 30]))
             ->withApiKey($tokenToUse);
 
         if (str_contains($model, 'llama.cpp')) {
