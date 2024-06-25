@@ -174,7 +174,7 @@ class SampleAnalyzeLlmCommand extends Command
 
                 return false;
             }
-            $temperature += 0.05;
+            $temperature += 0.25;
             $counter++;
         } while (!($gptResult instanceof GptResult) && $counter <= 5);
 
@@ -375,9 +375,11 @@ EOT;
 
                 return false;
             }
-            $temperature += 0.05;
+            if($temperature < 2) {
+                $temperature += 0.25;
+            }
             $counter++;
-        } while (!($gptResult instanceof GptResult) && $counter <= 3);
+        } while (!($gptResult instanceof GptResult) && $counter <= 10);
 
         if (!($gptResult instanceof GptResult)) {
             $io->error("{$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
