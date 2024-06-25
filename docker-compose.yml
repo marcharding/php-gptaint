@@ -83,7 +83,7 @@ services:
         container_name: caddy
         restart: unless-stopped
         volumes:
-            - .docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+            - ./.docker/caddy/Caddyfile:/etc/caddy/Caddyfile
         ports:
             - "80:80"
             - "443:443"
