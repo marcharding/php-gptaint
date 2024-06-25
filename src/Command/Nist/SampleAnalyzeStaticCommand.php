@@ -92,6 +92,16 @@ class SampleAnalyzeStaticCommand extends Command
             exec("php vendor/bin/rector process {$testCasePhpFile}.randomized.php 2>&1", $rectorResult);
             rename("{$testCasePhpFile}.randomized.php", "{$testCasePhpFile}.randomized");
 
+            // normalize filepath based on project root
+            $pattern = '#^'.preg_quote($this->projectDir, '/').'#';
+            $normalizedCestCasePhpFile = preg_replace($pattern, '', $testCasePhpFile, 1);
+
+            // Add or update code entity
+            $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['filepath' => $normalizedCestCasePhpFile]);
+            if (!$issueEntity) {
+                $issueEntity = new Issue();
+            }
+
             $stopwatch = new Stopwatch();
 
             // Psalm run
@@ -111,7 +121,7 @@ class SampleAnalyzeStaticCommand extends Command
     </projectFiles>
 </psalm>
 EOT;
-            if ($analyzeTypesActive['psalm'] === true) {
+            if ($analyzeTypesActive['psalm'] === true && $issueEntity->getPsalmState() === null) {
                 $stopwatch->start('psalm');
                 $io->writeln('Psalm is analysing '.basename($testCase));
                 $psalmConfigXml = $this->projectDir.'/var/psalm.xml';
@@ -130,8 +140,8 @@ EOT;
             // /Psalm run
 
             // Snyk run (if TOKEN is available)
-            if ($analyzeTypesActive['snyk'] === true) {
-                if (getenv('SNYK_TOKEN') && false === true) {
+            if ($analyzeTypesActive['snyk'] === true && $issueEntity->getSnykState() === null) {
+                if (getenv('SNYK_TOKEN')) {
                     $stopwatch->start('snyk');
                     $io->writeln('Snyk is analysing '.basename($testCase));
                     $snykResult = [];
@@ -149,7 +159,7 @@ EOT;
             // /Snyk run
 
             // Phan run
-            if ($analyzeTypesActive['phan'] === true) {
+            if ($analyzeTypesActive['phan'] === true && $issueEntity->getPhanState() === null) {
                 $stopwatch->start('phan');
                 $phanFileList = $this->projectDir.'/var/phan.txt';
                 file_put_contents($phanFileList, $testCasePhpFile);
@@ -188,15 +198,6 @@ EOT;
                 $note = 'Description not found.';
             }
 
-            // normalize filepath based on project root
-            $pattern = '#^'.preg_quote($this->projectDir, '/').'#';
-            $normalizedCestCasePhpFile = preg_replace($pattern, '', $testCasePhpFile, 1);
-
-            // Add or update code entity
-            $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['filepath' => $normalizedCestCasePhpFile]);
-            if (!$issueEntity) {
-                $issueEntity = new Issue();
-            }
             $issueEntity->setName(basename($testCase));
             $issueEntity->setFilepath($normalizedCestCasePhpFile);
             $issueEntity->setCweId($cweId);
@@ -207,7 +208,7 @@ EOT;
                 $issueEntity->setPsalmState($psalmResultBool === false ? Issue::StateBad : Issue::StateGood);
                 $issueEntity->setPsalmTime($psalmTime->getDuration());
             }
-            if ($analyzeTypesActive['snyk'] === true) {
+            if ($analyzeTypesActive['snyk'] === true && isset($snykResult)) {
                 $issueEntity->setSnykResult(implode(PHP_EOL, $snykResult));
                 $issueEntity->setSnykState($snykResultBool === false ? Issue::StateBad : Issue::StateGood);
                 $issueEntity->setSnykTime($snykTime->getDuration());
