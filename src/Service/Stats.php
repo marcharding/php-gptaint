@@ -28,25 +28,29 @@ class Stats
         // add llm methods
 
         $statistics = [];
+        $statisticsOverTime = [];
+        foreach ($issues as $key => $issue) {
+            // TODO: Extract to extra command, currently disabled
+            if (false) {
+                $tests = $gptResultRepository->findAllFeedbackGptResultByIssue($issue, 'gpt-3.5-turbo-0125');
 
-        foreach ($issues as $issue) {
-            $tests = $gptResultRepository->findAllFeedbackGptResultByIssue($issue, 'llama-3-8b');
+                $tmp = [];
+                $tmp[$issue->getName()]['state'] = $issue->getConfirmedState();
+                $tmp[$issue->getName()]['isExploitExampleSuccessful'] = [];
+                $tmp[$issue->getName()]['gptResult'] = [];
 
-            $tmp = [];
-            $tmp[$issue->getName()]['state'] = $issue->getConfirmedState();
-            $tmp[$issue->getName()]['isExploitExampleSuccessful'] = [];
-            $tmp[$issue->getName()]['gptResult'] = [];
+                foreach ($tests as $item) {
+                    $tmp[$issue->getName()]['isExploitExampleSuccessful'][] = $item->isExploitExampleSuccessful();
+                    $tmp[$issue->getName()]['gptResult'][] = $item;
+                }
 
-            foreach ($tests as $item) {
-                $tmp[$issue->getName()]['isExploitExampleSuccessful'][] = $item->isExploitExampleSuccessful();
-                $tmp[$issue->getName()]['gptResult'][] = $item;
-            }
-
-            foreach ($tmp as $item) {
-                if (count(array_unique($item['isExploitExampleSuccessful'])) !== 1) {
-                    dump($issue->getName());
-                    foreach ($item['gptResult'] as $gptResult) {
-                        dump($item['isExploitExampleSuccessful']);
+                // TODO: Refactor. This check if the results were consistent between multiple runs
+                foreach ($tmp as $item) {
+                    if (count(array_unique($item['isExploitExampleSuccessful'])) !== 1) {
+                        // dump($issue->getName());
+                        foreach ($item['gptResult'] as $gptResult) {
+                            // dump($item['isExploitExampleSuccessful']);
+                        }
                     }
                 }
             }
@@ -85,6 +89,7 @@ class Stats
                         }
                         break;
                 }
+                $statisticsOverTime["{$analyzer}"][] = $this->calculateStatistics($statistics[$analyzer]);
             }
         }
 
@@ -94,6 +99,74 @@ class Stats
             if ($statistics[$analyzer]['time'] === 0) {
                 unset($statistics[$analyzer]);
             }
+        }
+
+        // TODO: Extract to command
+        $maxLengths = array_map('count', $statisticsOverTime);
+        $maxLength = max($maxLengths);
+
+        $statsAnalyzers = [
+            'psalm',
+            'snyk',
+            'phan',
+            'gpt-4o (randomized)',
+            'llama-3-8b (randomized)',
+            'gpt-3.5-turbo-0125 (randomized)',
+        ];
+
+        $metrics = ['f1', 'far', 'gscore'];
+        foreach ($metrics as $metric) {
+            file_put_contents(__DIR__."/../../results_over_time_{$metric}.csv", 'count;'.implode(';', $statsAnalyzers).PHP_EOL);
+            for ($i = 1; $i < $maxLength; $i++) {
+                $row = [];
+                $row[] = $i;
+                foreach ($statsAnalyzers as $analyzer) {
+                    if (isset($statisticsOverTime[$analyzer][$i])) {
+                        $row[] = $statisticsOverTime[$analyzer][$i][$metric];
+                    } else {
+                        $row[] = 0;
+                    }
+                }
+                file_put_contents(__DIR__."/../../results_over_time_{$metric}.csv", implode(';', $row).PHP_EOL, FILE_APPEND);
+            }
+        }
+
+        $metrics = ['f1', 'far', 'gscore', 'recall'];
+        file_put_contents(__DIR__.'/../../results_total.csv', 'analyzer;'.implode(';', $metrics).PHP_EOL);
+        foreach ($statsAnalyzers as $analyzer) {
+            $row = [];
+            $row[] = $analyzer;
+            foreach ($metrics as $metric) {
+                if (isset($statistics[$analyzer][$metric])) {
+                    if ($metric === 'far') {
+                        $row[] = 1 - $statistics[$analyzer][$metric];
+                    } else {
+                        $row[] = $statistics[$analyzer][$metric];
+                    }
+                } else {
+                    $row[] = 0;
+                }
+            }
+            file_put_contents(__DIR__.'/../../results_total_metrics.csv', implode(';', $row).PHP_EOL, FILE_APPEND);
+        }
+
+        $metrics = ['f1', 'far', 'gscore', 'recall'];
+        file_put_contents(__DIR__.'/../../results_total.csv', 'analyzer;'.implode(';', $metrics).PHP_EOL);
+        foreach ($statsAnalyzers as $analyzer) {
+            $row = [];
+            $row[] = $analyzer;
+            foreach ($metrics as $metric) {
+                if (isset($statistics[$analyzer][$metric])) {
+                    if ($metric === 'far') {
+                        $row[] = 1 - $statistics[$analyzer][$metric];
+                    } else {
+                        $row[] = $statistics[$analyzer][$metric];
+                    }
+                } else {
+                    $row[] = 0;
+                }
+            }
+            file_put_contents(__DIR__.'/../../results_total_metrics_".csv', implode(';', $row).PHP_EOL, FILE_APPEND);
         }
 
         return $statistics;
@@ -107,13 +180,19 @@ class Stats
 
         $results['count'] = $count;
 
-        $results['sensitivity'] = $results['truePositives'] != 0 ? $results['truePositives'] / 25 : 0;
+        $results['recall'] = ($results['truePositives'] + $results['falseNegatives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falseNegatives']) : 0;
+
+        $results['sensitivity'] = $results['truePositives'] != 0 ? $results['truePositives'] / $count : 0;
 
         $results['precision'] = ($results['truePositives'] + $results['falsePositives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falsePositives']) : 0;
 
         $results['accuracy'] = $count != 0 ? ($results['truePositives'] + $results['trueNegatives']) / $count : 0;
 
         $results['specificity'] = ($results['trueNegatives'] + $results['falsePositives']) != 0 ? $results['trueNegatives'] / ($results['trueNegatives'] + $results['falsePositives']) : 0;
+
+        $results['far'] = ($results['falsePositives'] + $results['trueNegatives']) == 0 ? 0 : $results['falsePositives'] / ($results['falsePositives'] + $results['trueNegatives']);
+
+        $results['gscore'] = (2 * $results['recall'] * (1 - $results['far'])) / ($results['recall'] + 1 - $results['far']);
 
         $results['f1'] = ($results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) != 0 ? 2 * $results['truePositives'] / (2 * $results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) : 0;
 
