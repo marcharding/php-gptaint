@@ -19,12 +19,12 @@ colima start --vm-type=vz --mount-type=virtiofs --cpu 4 --memory 4
 docker compose up --remove-orphans
 ```
 
-After all containers have started, you must create the initial database.
-
 To execute commands within the main app container, use:
+
 ```bash
 docker exec -it webserver-app bash
 ```
+
 Alternatively, execute the commands via Docker Compose. The following examples demonstrate this approach.
 
 ### Create the Database Schema
@@ -51,6 +51,9 @@ docker compose exec webserver_app php bin/console app:samples:extract
 
 ```bash
 docker compose exec webserver_app php bin/console app:samples:create-randomize-test-set
+docker compose exec webserver_app php bin/console app:samples:create-randomize-test-set /var/www/application/data/samples-all/nist/extracted/2022-05-12-php-test-suite-sqli-v1-0-0 /var/www/application/data/samples-selection/2022-05-12-php-test-suite-sqli-v1-0-0-samples --amount=100
+docker compose exec webserver_app php bin/console app:samples:create-randomize-test-set /var/www/application/data/samples-all/nist/extracted/2022-08-02-php-test-suite-xss-v1-0-0 /var/www/application/data/samples-selection/2022-08-02-php-test-suite-xss-v1-0-0 --amount=500
+docker compose exec webserver_app php bin/console app:sample:analyze:static --analyzeTypes=phan,psalm,snyk  /var/www/application/data/samples-selection/2022-08-02-php-test-suite-xss-v1-0-0
 ```
 
 ```bash
@@ -61,6 +64,7 @@ docker compose exec webserver_app php bin/console app:samples:load-samples-prese
 
 ```bash
 docker compose exec webserver_app php bin/console app:sample:analyze:static --analyzeTypes=phan,psalm /var/www/application/data/samples-all/nist/foobar
+
 ```
 
 5. Analyze the samples with online LLMs (currently supporting OpenAI or Mistral):
@@ -70,7 +74,17 @@ docker compose exec webserver_app php bin/console app:sample:analyze:llm --model
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-3.5-turbo-0125 --randomized
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview --randomized
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-3-70b --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-turbo
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-turbo --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o --randomized
+```
+
+Analyse a sample again by providing the id
+
+```bash
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o 10
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o --randomized 10
 ```
 
 ## Using Other LLMs with OpenAI Compatible APIs (e.g., LlamaCPP)
@@ -78,14 +92,14 @@ docker compose exec webserver_app php bin/console app:sample:analyze:llm --model
 ### Start Llama via LlamaCPP (https://github.com/ggerganov/llama.cpp)
 
 ```bash
-./server --ctx-size 8192 -m models/Meta-Llama-3-8B-Instruct-Q6_K.gguf
-./server --ctx-size 4096 -m models/Phi-3-mini-4k-instruct-q4.gguf
+./llama-server --ctx-size 8192 -m models/Meta-Llama-3-8B-Instruct-Q6_K.gguf
+./llama-server --ctx-size 4096 -m models/Phi-3-mini-4k-instruct-q4.gguf
 ```
 
 ### Run Tests for the Specific LLM
 
 ```bash
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-3-70b --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-3-8b --randomized
 ```
 
 ### Helper Commands:
@@ -100,5 +114,6 @@ docker compose exec webserver_app php bin/console app:nist:stats /var/www/applic
 To export results:
 
 ```bash
-docker compose exec webserver_app php bin/console app:sample:results:export:csv foobar.csv
+docker compose exec webserver_app php bin/console app:sample:results:export:csv results.csv
+docker compose exec webserver_app php bin/console app:sample:results:export-timeline:csv results.csv
 ```
