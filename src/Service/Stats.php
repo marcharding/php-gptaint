@@ -25,11 +25,10 @@ class Stats
         $modelValues = array_column($modelValues, 'gpt_version');
         $analyzers = array_merge($analyzers, $modelValues);
 
-        // add llm methods
-
         $statistics = [];
         $statisticsOverTime = [];
-        foreach ($issues as $key => $issue) {
+        foreach ($issues as $issue) {
+
             // TODO: Extract to extra command, currently disabled
             if (false) {
                 $tests = $gptResultRepository->findAllFeedbackGptResultByIssue($issue, 'gpt-3.5-turbo-0125');
@@ -101,75 +100,7 @@ class Stats
             }
         }
 
-        // TODO: Extract to command
-        $maxLengths = array_map('count', $statisticsOverTime);
-        $maxLength = max($maxLengths);
-
-        $statsAnalyzers = [
-            'psalm',
-            'snyk',
-            'phan',
-            'gpt-4o (randomized)',
-            'llama-3-8b (randomized)',
-            'gpt-3.5-turbo-0125 (randomized)',
-        ];
-
-        $metrics = ['f1', 'far', 'gscore'];
-        foreach ($metrics as $metric) {
-            file_put_contents(__DIR__."/../../results_over_time_{$metric}.csv", 'count;'.implode(';', $statsAnalyzers).PHP_EOL);
-            for ($i = 1; $i < $maxLength; $i++) {
-                $row = [];
-                $row[] = $i;
-                foreach ($statsAnalyzers as $analyzer) {
-                    if (isset($statisticsOverTime[$analyzer][$i])) {
-                        $row[] = $statisticsOverTime[$analyzer][$i][$metric];
-                    } else {
-                        $row[] = 0;
-                    }
-                }
-                file_put_contents(__DIR__."/../../results_over_time_{$metric}.csv", implode(';', $row).PHP_EOL, FILE_APPEND);
-            }
-        }
-
-        $metrics = ['f1', 'far', 'gscore', 'recall'];
-        file_put_contents(__DIR__.'/../../results_total.csv', 'analyzer;'.implode(';', $metrics).PHP_EOL);
-        foreach ($statsAnalyzers as $analyzer) {
-            $row = [];
-            $row[] = $analyzer;
-            foreach ($metrics as $metric) {
-                if (isset($statistics[$analyzer][$metric])) {
-                    if ($metric === 'far') {
-                        $row[] = 1 - $statistics[$analyzer][$metric];
-                    } else {
-                        $row[] = $statistics[$analyzer][$metric];
-                    }
-                } else {
-                    $row[] = 0;
-                }
-            }
-            file_put_contents(__DIR__.'/../../results_total_metrics.csv', implode(';', $row).PHP_EOL, FILE_APPEND);
-        }
-
-        $metrics = ['f1', 'far', 'gscore', 'recall'];
-        file_put_contents(__DIR__.'/../../results_total.csv', 'analyzer;'.implode(';', $metrics).PHP_EOL);
-        foreach ($statsAnalyzers as $analyzer) {
-            $row = [];
-            $row[] = $analyzer;
-            foreach ($metrics as $metric) {
-                if (isset($statistics[$analyzer][$metric])) {
-                    if ($metric === 'far') {
-                        $row[] = 1 - $statistics[$analyzer][$metric];
-                    } else {
-                        $row[] = $statistics[$analyzer][$metric];
-                    }
-                } else {
-                    $row[] = 0;
-                }
-            }
-            file_put_contents(__DIR__.'/../../results_total_metrics_".csv', implode(';', $row).PHP_EOL, FILE_APPEND);
-        }
-
-        return $statistics;
+        return ['statistics' => $statistics, 'statisticsOverTime' => $statisticsOverTime];
     }
 
     public function calculateStatistics($results)

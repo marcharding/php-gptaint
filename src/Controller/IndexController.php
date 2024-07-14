@@ -25,7 +25,7 @@ class IndexController extends AbstractController
         $statistics = $this->stats->getStatistics($issues);
 
         return $this->render('index.html.twig', [
-            'results' => $statistics,
+            'results' => $statistics['statistics'],
         ]);
     }
 
