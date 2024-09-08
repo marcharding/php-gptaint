@@ -116,4 +116,12 @@ To export results:
 ```bash
 docker compose exec webserver_app php bin/console app:sample:results:export:csv results.csv
 docker compose exec webserver_app php bin/console app:sample:results:export-timeline:csv results.csv
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --no-feedback
 ```
