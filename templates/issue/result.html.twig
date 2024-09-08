@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Issue{% endblock %}
+
+{% block header %}
+
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <h1 class="text-xl font-semibold leading-6 text-gray-900">Sample {{issue.name}}</h1>
+    </div>
+
+{% endblock %}
+
+{% block body %}
+    <div class="[white-space: pre-wrap] bg-black text-white font-mono p-4 shadow-lg border border-gray-700">
+        <textarea class="[white-space:pre-wrap] p-0 resize-none font-mono leading-normal w-full h-64 bg-black text-white border-none outline-none" disabled>
+$ {{proccess.commandline|raw }}
+{{proccess.output|raw }}
+        </textarea>
+    </div>
+{% endblock %}

@@ -2,13 +2,19 @@
 
 namespace App\Controller;
 
+use App\Entity\GptResult;
 use App\Entity\Issue;
+use App\Repository\GptResultRepository;
 use App\Repository\IssueRepository;
 use App\Service\TaintTypes;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/issue')]
@@ -47,6 +53,59 @@ class IssueController extends AbstractController
             'queue' => $result,
             'issue' => $issue,
         ]);
+    }
+
+    #[Route('/{id}/init-sandbox/{gptResult}', name: 'app_issue_init_sandbox', methods: ['GET'])]
+    public function initSandbox(Issue $issue, GptResult $gptResult, string $projectDir): Response
+    {
+        // get source directory of sample
+        $sourceDirectory = $projectDir.dirname(dirname($issue->getFilepath()));
+
+        // find sample files (named index.php or sample.php first, than any php file (legacy format with CWE_* names)
+        $finder = new Finder();
+        $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php', 'CWE_*.php'])->getIterator();
+        $sourceFiles->rewind();
+        $sourceFile = $sourceFiles->current()->getRealPath();
+        $targetFile = "{$projectDir}/sandbox/public/index.php";
+
+        $filesystem = new Filesystem();
+        $filesystem->copy($sourceFile, $targetFile, true);
+
+        // remove comments
+        $targetFileContent = preg_replace('#<!--(.*?)-->#ism', '', file_get_contents($targetFile));
+        file_put_contents($targetFile, $targetFileContent);
+
+        // setup mysql database
+        $sqlFile = "{$sourceDirectory}/init.sql";
+        if (is_file($sqlFile)) {
+            $dockerfile = file_get_contents("{$sourceDirectory}/Dockerfile");
+            if (strpos($dockerfile, 'sqlite3') !== false) {
+                if (is_file("{$projectDir}/db/database.db")) {
+                    unlink("{$projectDir}/db/database.db");
+                }
+                echo "sqlite3 -init $sqlFile {$projectDir}/db/database.db '.exit'";
+                system("sqlite3 -init '{$sqlFile}' '{projectDir}/db/database.db' '.exit'");
+            } else {
+                system("mysql -hmysql -uroot -e 'DROP DATABASE IF EXISTS myDB;'");
+                system("mysql -hmysql -uroot < '{$sqlFile}'");
+            }
+        }
+
+        $process = Process::fromShellCommandline($gptResult->getExploitExample());
+        $process->setTimeout(59);
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException $e) {
+            return false;
+        } finally {
+            return $this->render('issue/result.html.twig', [
+                'issue' => $issue,
+                'proccess' => $process
+            ]);
+
+        }
+
+
     }
 
     public function getPsalmResultsArray($projectDir, $folderName): array

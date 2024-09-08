@@ -96,7 +96,8 @@
                             </div>
                         </div>
                     <a href="{{ path('app_prompt_show', {'id': gptResult.prompt.id}) }}">show prompt</a>
-
+                    <span class="px-4">|</span>
+                    <a href="{{ path('app_issue_init_sandbox', {'id':issue.id, 'gptResult': gptResult.id}) }}">test example exploit</a>
                 </div>
             {% endfor %}
             </div>
