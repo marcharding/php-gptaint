@@ -7,6 +7,8 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class Stats
 {
+    private EntityManagerInterface $entityManager;
+
     public function __construct(EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
@@ -20,7 +22,10 @@ class Stats
             'phan',
         ];
 
-        $modelValues = $this->entityManager->getConnection()->executeQuery('SELECT DISTINCT gpt_version FROM gpt_result')->fetchAllAssociative();
+        $modelValues = $this->entityManager->getConnection()
+            ->executeQuery('SELECT DISTINCT gpt_version FROM gpt_result')
+            ->fetchAllAssociative();
+
         $gptResultRepository = $this->entityManager->getRepository(GptResult::class);
         $modelValues = array_column($modelValues, 'gpt_version');
         $analyzers = array_merge($analyzers, $modelValues);
@@ -54,6 +59,7 @@ class Stats
                 }
             }
 
+        foreach ($issues as $issue) {
             foreach ($analyzers as $analyzer) {
                 if (!isset($statistics[$analyzer])) {
                     $statistics[$analyzer] = [
@@ -64,6 +70,7 @@ class Stats
                         'time' => 0,
                     ];
                 }
+
                 switch ($analyzer) {
                     case 'psalm':
                         $statistics[$analyzer] = $this->getConfusionTable($statistics[$analyzer], $issue->getConfirmedState(), $issue->getPsalmState());
@@ -83,11 +90,28 @@ class Stats
                             if ($gptResult) {
                                 $statistics[$analyzer] = $this->getConfusionTable($statistics[$analyzer], $issue->getConfirmedState(), $gptResult->isExploitExampleSuccessful());
                             }
+
+                            $gptResultWithoutFeedback = $gptResultRepository->findLastGptResultByIssue($issue, $analyzer);
+                            if ($gptResultWithoutFeedback) {
+                                $analyzerWithoutFeedback = "{$analyzer}_wo_feedback";
+                                if (!isset($statistics[$analyzerWithoutFeedback])) {
+                                    $statistics[$analyzerWithoutFeedback] = [
+                                        'truePositives' => 0,
+                                        'trueNegatives' => 0,
+                                        'falsePositives' => 0,
+                                        'falseNegatives' => 0,
+                                        'time' => 0,
+                                    ];
+                                }
+                                $statistics[$analyzerWithoutFeedback] = $this->getConfusionTable($statistics[$analyzerWithoutFeedback], $issue->getConfirmedState(), $gptResultWithoutFeedback->isExploitExampleSuccessful());
+                                $statistics[$analyzerWithoutFeedback]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer); // Assuming same method for time sum
+                            }
+
                             $statistics[$analyzer]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer);
-                            break;
                         }
                         break;
                 }
+
                 $statisticsOverTime["{$analyzer}"][] = $this->calculateStatistics($statistics[$analyzer]);
             }
         }
@@ -106,27 +130,16 @@ class Stats
     public function calculateStatistics($results)
     {
         $count = $results['truePositives'] + $results['trueNegatives'] + $results['falsePositives'] + $results['falseNegatives'];
-
         $results['sum'] = $count;
-
         $results['count'] = $count;
-
         $results['recall'] = ($results['truePositives'] + $results['falseNegatives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falseNegatives']) : 0;
-
         $results['sensitivity'] = $results['truePositives'] != 0 ? $results['truePositives'] / $count : 0;
-
         $results['precision'] = ($results['truePositives'] + $results['falsePositives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falsePositives']) : 0;
-
         $results['accuracy'] = $count != 0 ? ($results['truePositives'] + $results['trueNegatives']) / $count : 0;
-
         $results['specificity'] = ($results['trueNegatives'] + $results['falsePositives']) != 0 ? $results['trueNegatives'] / ($results['trueNegatives'] + $results['falsePositives']) : 0;
-
         $results['far'] = ($results['falsePositives'] + $results['trueNegatives']) == 0 ? 0 : $results['falsePositives'] / ($results['falsePositives'] + $results['trueNegatives']);
-
         $results['gscore'] = (2 * $results['recall'] * (1 - $results['far'])) / ($results['recall'] + 1 - $results['far']);
-
         $results['f1'] = ($results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) != 0 ? 2 * $results['truePositives'] / (2 * $results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) : 0;
-
         return $results;
     }
 
