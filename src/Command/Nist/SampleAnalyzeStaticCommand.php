@@ -2,7 +2,8 @@
 
 namespace App\Command\Nist;
 
-use App\Entity\Issue;
+use App\Entity\AnalysisResult;
+use App\Entity\Sample;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -63,6 +64,27 @@ class SampleAnalyzeStaticCommand extends Command
             }
         }
 
+        if ($analyzeTypesActive['psalm'] === true) {
+            exec('vendor/bin/psalm --version', $psalmVersion);
+            if (preg_match('#\b(\d+\.\d+\.\d+)\b#', $psalmVersion[0], $matches)) {
+                $psalmVersion = $matches[1];
+            }
+        }
+
+        if ($analyzeTypesActive['snyk'] === true) {
+            exec('snyk --version', $psalmVersion);
+            if (preg_match('#\b(\d+\.\d+\.\d+)\b#', $psalmVersion[0], $matches)) {
+                $snykVersion = $matches[1];
+            }
+        }
+
+        if ($analyzeTypesActive['phan'] === true) {
+            exec(' vendor/phan/phan/phan --version', $psalmVersion);
+            if (preg_match('#\b(\d+\.\d+\.\d+)\b#', $psalmVersion[0], $matches)) {
+                $phanVersion = $matches[1];
+            }
+        }
+
         $di = new \DirectoryIterator($sourceDirectory);
 
         foreach ($di as $directory) {
@@ -97,9 +119,9 @@ class SampleAnalyzeStaticCommand extends Command
             $normalizedCestCasePhpFile = preg_replace($pattern, '', $testCasePhpFile, 1);
 
             // Add or update code entity
-            $issueEntity = $this->entityManager->getRepository(Issue::class)->findOneBy(['filepath' => $normalizedCestCasePhpFile]);
+            $issueEntity = $this->entityManager->getRepository(Sample::class)->findOneBy(['filepath' => $normalizedCestCasePhpFile]);
             if (!$issueEntity) {
-                $issueEntity = new Issue();
+                $issueEntity = new Sample();
             }
 
             $stopwatch = new Stopwatch();
@@ -121,7 +143,7 @@ class SampleAnalyzeStaticCommand extends Command
     </projectFiles>
 </psalm>
 EOT;
-            if ($analyzeTypesActive['psalm'] === true && $issueEntity->getPsalmState() === null) {
+            if ($analyzeTypesActive['psalm'] === true) {
                 $stopwatch->start('psalm');
                 $io->writeln('Psalm is analysing '.basename($testCase));
                 $psalmConfigXml = $this->projectDir.'/var/psalm.xml';
@@ -140,7 +162,7 @@ EOT;
             // /Psalm run
 
             // Snyk run (if TOKEN is available)
-            if ($analyzeTypesActive['snyk'] === true && $issueEntity->getSnykState() === null) {
+            if ($analyzeTypesActive['snyk'] === true) {
                 if (getenv('SNYK_TOKEN')) {
                     $stopwatch->start('snyk');
                     $io->writeln('Snyk is analysing '.basename($testCase));
@@ -159,7 +181,7 @@ EOT;
             // /Snyk run
 
             // Phan run
-            if ($analyzeTypesActive['phan'] === true && $issueEntity->getPhanState() === null) {
+            if ($analyzeTypesActive['phan'] === true) {
                 $stopwatch->start('phan');
                 $phanFileList = $this->projectDir.'/var/phan.txt';
                 file_put_contents($phanFileList, $testCasePhpFile);
@@ -203,29 +225,47 @@ EOT;
             $issueEntity->setCweId($cweId);
             $issueEntity->setFile(basename($normalizedCestCasePhpFile));
             $issueEntity->setNote($note);
-            if ($analyzeTypesActive['psalm'] === true) {
-                $issueEntity->setPsalmResult(implode(PHP_EOL, $psalmResult));
-                $issueEntity->setPsalmState($psalmResultBool === false ? Issue::StateBad : Issue::StateGood);
-                $issueEntity->setPsalmTime($psalmTime->getDuration());
-            }
-            if ($analyzeTypesActive['snyk'] === true && isset($snykResult)) {
-                $issueEntity->setSnykResult(implode(PHP_EOL, $snykResult));
-                $issueEntity->setSnykState($snykResultBool === false ? Issue::StateBad : Issue::StateGood);
-                $issueEntity->setSnykTime($snykTime->getDuration());
-            }
-            if ($analyzeTypesActive['phan'] === true) {
-                $issueEntity->setPhanResult(implode(PHP_EOL, $phanResult));
-                $issueEntity->setPhanState($phanResultBool === false ? Issue::StateBad : Issue::StateGood);
-                $issueEntity->setPhanTime($phanTime->getDuration());
-            }
-            $issueEntity->setConfirmedState($state === 'bad' ? Issue::StateBad : Issue::StateGood);
+            $issueEntity->setConfirmedState($state === 'bad' ? Sample::StateBad : Sample::StateGood);
             $issueEntity->setCode($code);
             $issueEntity->setCodeRandomized($codeRandomized);
             $issueEntity->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
             $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
-
             $this->entityManager->persist($issueEntity);
             $this->entityManager->flush();
+
+            if ($analyzeTypesActive['psalm'] === true) {
+                $analysisResult = new AnalysisResult();
+                $analysisResult->setIssue($issueEntity);
+                $analysisResult->setAnalyzer('psalm');
+                $analysisResult->setResultState($psalmResultBool === false ? Sample::StateBad : Sample::StateGood);
+                $analysisResult->setAnalysisResult(implode(PHP_EOL, $psalmResult));
+                $analysisResult->setTime($psalmTime->getDuration());
+                $analysisResult->setAnalyzerVersion($psalmVersion);
+                $this->entityManager->persist($analysisResult);
+                $this->entityManager->flush();
+            }
+            if ($analyzeTypesActive['snyk'] === true && isset($snykResult)) {
+                $analysisResult = new AnalysisResult();
+                $analysisResult->setIssue($issueEntity);
+                $analysisResult->setAnalyzer('snyk');
+                $analysisResult->setResultState($snykResultBool === false ? Sample::StateBad : Sample::StateGood);
+                $analysisResult->setAnalysisResult(implode(PHP_EOL, $snykResult));
+                $analysisResult->setTime($snykTime->getDuration());
+                $analysisResult->setAnalyzerVersion($snykVersion);
+                $this->entityManager->persist($analysisResult);
+                $this->entityManager->flush();
+            }
+            if ($analyzeTypesActive['phan'] === true) {
+                $analysisResult = new AnalysisResult();
+                $analysisResult->setIssue($issueEntity);
+                $analysisResult->setAnalyzer('phan');
+                $analysisResult->setResultState($phanResultBool === false ? Sample::StateBad : Sample::StateGood);
+                $analysisResult->setAnalysisResult(implode(PHP_EOL, $phanResult));
+                $analysisResult->setTime($phanTime->getDuration());
+                $analysisResult->setAnalyzerVersion($phanVersion);
+                $this->entityManager->persist($analysisResult);
+                $this->entityManager->flush();
+            }
         }
 
         $io->success('Finished.');

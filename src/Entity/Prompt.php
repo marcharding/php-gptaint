@@ -25,7 +25,7 @@ class Prompt
     #[ORM\Column]
     private ?bool $active = null;
 
-    #[ORM\OneToMany(mappedBy: 'prompt', targetEntity: GptResult::class)]
+    #[ORM\OneToMany(mappedBy: 'prompt', targetEntity: AnalysisResult::class)]
     private Collection $gptResults;
 
     public function __construct()
@@ -75,14 +75,14 @@ class Prompt
     }
 
     /**
-     * @return Collection<int, GptResult>
+     * @return Collection<int, AnalysisResult>
      */
     public function getGptResults(): Collection
     {
         return $this->gptResults;
     }
 
-    public function addGptResult(GptResult $gptResult): static
+    public function addGptResult(AnalysisResult $gptResult): static
     {
         if (!$this->gptResults->contains($gptResult)) {
             $this->gptResults->add($gptResult);
@@ -92,7 +92,7 @@ class Prompt
         return $this;
     }
 
-    public function removeGptResult(GptResult $gptResult): static
+    public function removeGptResult(AnalysisResult $gptResult): static
     {
         if ($this->gptResults->removeElement($gptResult)) {
             // set the owning side to null (unless already changed)

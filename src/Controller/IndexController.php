@@ -28,5 +28,4 @@ class IndexController extends AbstractController
             'results' => $statistics['statistics'],
         ]);
     }
-
 }

@@ -7,34 +7,34 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: GptResultRepository::class)]
-class GptResult
+class AnalysisResult
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $response = null;
 
     #[ORM\ManyToOne(inversedBy: 'gptResults')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Issue $issue = null;
+    private ?Sample $issue = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?int $exploitProbability = null;
 
     #[ORM\Column(type: Types::TEXT)]
     private ?string $analysisResult = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $exploitExample = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $gptVersion = null;
+    private ?string $analyzer = null;
 
     #[ORM\ManyToOne(inversedBy: 'gptResults')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Prompt $prompt = null;
 
     #[ORM\Column(nullable: true)]
@@ -44,7 +44,7 @@ class GptResult
     private ?string $promptMessage = null;
 
     #[ORM\OneToOne(targetEntity: self::class, cascade: ['persist', 'remove'])]
-    private ?self $gptResultParent = null;
+    private ?self $parentResult = null;
 
     #[ORM\Column(nullable: true)]
     private ?int $time = null;
@@ -54,6 +54,12 @@ class GptResult
 
     #[ORM\Column(nullable: true)]
     private ?int $completionTokens = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $analyzerVersion = null;
+
+    #[ORM\Column]
+    private ?int $resultState = null;
 
     public function getId(): ?int
     {
@@ -72,12 +78,12 @@ class GptResult
         return $this;
     }
 
-    public function getIssue(): ?Issue
+    public function getIssue(): ?Sample
     {
         return $this->issue;
     }
 
-    public function setIssue(?Issue $issue): static
+    public function setIssue(?Sample $issue): static
     {
         $this->issue = $issue;
 
@@ -108,21 +114,22 @@ class GptResult
         return $this;
     }
 
-    public function getGptVersion(): ?string
+    public function getAnalyzer(): ?string
     {
-        return $this->gptVersion;
+        return $this->analyzer;
     }
 
-    public function setGptVersion(string $gptVersion): static
+    public function setAnalyzer(string $analyzer): static
     {
-        $this->gptVersion = $gptVersion;
+        $this->analyzer = $analyzer;
 
         return $this;
     }
 
     public function getExploitExample(): ?string
     {
-        return $this->exploitExample;
+        return 'curl '.str_replace(" ", "%20", trim(str_replace("curl", "", $this->exploitExample)));
+
     }
 
     public function setExploitExample(?string $exploitExample): void
@@ -180,14 +187,14 @@ class GptResult
         return $this;
     }
 
-    public function getGptResultParent(): ?self
+    public function getParentResult(): ?self
     {
-        return $this->gptResultParent;
+        return $this->parentResult;
     }
 
-    public function setGptResultParent(?self $gptResultParent): static
+    public function setParentResult(?self $parentResult): static
     {
-        $this->gptResultParent = $gptResultParent;
+        $this->parentResult = $parentResult;
 
         return $this;
     }
@@ -224,6 +231,30 @@ class GptResult
     public function setCompletionTokens(?int $completionTokens): static
     {
         $this->completionTokens = $completionTokens;
+
+        return $this;
+    }
+
+    public function getAnalyzerVersion(): ?string
+    {
+        return $this->analyzerVersion;
+    }
+
+    public function setAnalyzerVersion(string $analyzerVersion): static
+    {
+        $this->analyzerVersion = $analyzerVersion;
+
+        return $this;
+    }
+
+    public function getResultState(): ?int
+    {
+        return $this->resultState;
+    }
+
+    public function setResultState(int $resultState): static
+    {
+        $this->resultState = $resultState;
 
         return $this;
     }

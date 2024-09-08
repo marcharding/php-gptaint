@@ -2,8 +2,8 @@
 
 namespace App\Service;
 
-use App\Entity\GptResult;
-use App\Entity\Issue;
+use App\Entity\AnalysisResult;
+use App\Entity\Sample;
 use App\Entity\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
@@ -48,7 +48,7 @@ class GptQuery
         return $this->randomize;
     }
 
-    public function queryGpt(Issue $issue, $functionCall = true, $temperature = 0.10, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null): GptResult|array
+    public function queryGpt(Sample $issue, $functionCall = true, $temperature = 0.10, $messages = [], $additionalFunctions = [], AnalysisResult $parentGptResult = null): AnalysisResult|array
     {
         $model = $this->model;
 
@@ -228,14 +228,17 @@ class GptQuery
             }
         }
 
+        // Debug
+        // dump($json);
+
         if (!isset($completeResult) || !isset($analysisResult) || !isset($exploitProbability) || !is_numeric($exploitProbability) || !isset($exploitExample)) {
             // TODO: Better error handling
             return [['completeResult' => $completeResult, 'analysisResult' => $analysisResult, 'exploitProbability' => $exploitProbability, 'exploitExample' => $exploitExample], $response->toArray()];
         }
 
-        $gptResult = new GptResult();
+        $gptResult = new AnalysisResult();
         $gptResult->setIssue($issue);
-        $gptResult->setGptVersion($modeName);
+        $gptResult->setAnalyzer($modeName);
         $gptResult->setPrompt($promptEntity);
         $gptResult->setPromptMessage($promptMessage);
         $gptResult->setResponse($completeResult);
@@ -247,7 +250,7 @@ class GptQuery
         $gptResult->setPromptTokens($response['usage']['prompt_tokens']);
         $gptResult->setCompletionTokens($response['usage']['completion_tokens']);
         if ($parentGptResult) {
-            $gptResult->setGptResultParent($parentGptResult);
+            $gptResult->setParentResult($parentGptResult);
         }
 
         return $gptResult;
@@ -259,6 +262,9 @@ class GptQuery
 
         // fix prompt formats / tokens (remove residuals like <|eot_id|> from the retrieved json)
         $string = preg_replace("#<\|[a-z_]+\|>#ism", '', $string);
+
+        // Debug
+        // dump($string);
 
         $result = [];
 

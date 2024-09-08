@@ -2,9 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\GptResult;
-use App\Entity\Issue;
-use App\Repository\GptResultRepository;
+use App\Entity\AnalysisResult;
+use App\Entity\Sample;
 use App\Repository\IssueRepository;
 use App\Service\TaintTypes;
 use Doctrine\Persistence\ManagerRegistry;
@@ -29,7 +28,7 @@ class IssueController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_issue_show', methods: ['GET'])]
-    public function show(Issue $issue, ManagerRegistry $managerRegistry): Response
+    public function show(Sample $issue, ManagerRegistry $managerRegistry): Response
     {
         $phpSerializer = new PhpSerializer();
         $connection = $managerRegistry->getConnection();
@@ -56,7 +55,7 @@ class IssueController extends AbstractController
     }
 
     #[Route('/{id}/init-sandbox/{gptResult}', name: 'app_issue_init_sandbox', methods: ['GET'])]
-    public function initSandbox(Issue $issue, GptResult $gptResult, string $projectDir): Response
+    public function initSandbox(Sample $issue, AnalysisResult $gptResult, string $projectDir): Response
     {
         // get source directory of sample
         $sourceDirectory = $projectDir.dirname(dirname($issue->getFilepath()));
@@ -100,12 +99,9 @@ class IssueController extends AbstractController
         } finally {
             return $this->render('issue/result.html.twig', [
                 'issue' => $issue,
-                'proccess' => $process
+                'proccess' => $process,
             ]);
-
         }
-
-
     }
 
     public function getPsalmResultsArray($projectDir, $folderName): array

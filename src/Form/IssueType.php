@@ -2,7 +2,7 @@
 
 namespace App\Form;
 
-use App\Entity\Issue;
+use App\Entity\Sample;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -23,7 +23,7 @@ class IssueType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => Issue::class,
+            'data_class' => Sample::class,
         ]);
     }
 }

@@ -17,6 +17,7 @@ final class RenameVariablesToRandomNamesRector extends AbstractRector
 {
     private mixed $variableNames;
     private mixed $variableCounter = 0;
+
     public function getRuleDefinition(): RuleDefinition
     {
         return new RuleDefinition('// @todo fill the description', [
@@ -69,7 +70,9 @@ CODE_SAMPLE
     private function generateRandomName(): string
     {
         $this->variableCounter++;
+
         return 'var'.$this->variableCounter;
+
         return 'var_'.bin2hex(random_bytes(4));
     }
 }

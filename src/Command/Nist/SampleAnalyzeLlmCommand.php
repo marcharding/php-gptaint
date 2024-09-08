@@ -2,8 +2,8 @@
 
 namespace App\Command\Nist;
 
-use App\Entity\GptResult;
-use App\Entity\Issue;
+use App\Entity\AnalysisResult;
+use App\Entity\Sample;
 use App\Service\GptQuery;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -67,11 +67,11 @@ class SampleAnalyzeLlmCommand extends Command
         $this->gptQueryService->setRandomize($this->randomized);
 
         if ($gptResultId) {
-            $gptResult = $this->entityManager->getRepository(GptResult::class)->find($gptResultId);
+            $gptResult = $this->entityManager->getRepository(AnalysisResult::class)->find($gptResultId);
         }
 
         if ($issueId) {
-            $issue = $this->entityManager->getRepository(Issue::class)->find($issueId);
+            $issue = $this->entityManager->getRepository(Sample::class)->find($issueId);
             $this->startGptFeedbackLoop($io, $issue, $gptResult ?? null);
         }
 
@@ -84,7 +84,7 @@ class SampleAnalyzeLlmCommand extends Command
             if ($answer) {
                 $output->writeln('Ok, starting analysis for all issues.');
 
-                $issues = $this->entityManager->getRepository(Issue::class)->findAll();
+                $issues = $this->entityManager->getRepository(Sample::class)->findAll();
                 foreach ($issues as $issue) {
                     $this->startGptFeedbackLoop($io, $issue);
                 }
@@ -99,9 +99,9 @@ class SampleAnalyzeLlmCommand extends Command
     }
 
     /**
-     * @param Issue|object|null $issue
+     * @param Sample|object|null $issue
      */
-    public function startGptFeedbackLoop(SymfonyStyle $io, Issue|null $issue, GptResult $gptResult = null): void
+    public function startGptFeedbackLoop(SymfonyStyle $io, Sample|null $issue, AnalysisResult $gptResult = null): void
     {
         $io->block("Starting analysis '{$issue->getName()} / Internal id: {$issue->getId()} / Model: {$this->gptQueryService->getModel()}", 'START', 'fg=yellow', '# ');
 
@@ -111,7 +111,7 @@ class SampleAnalyzeLlmCommand extends Command
             $io->block('good', 'CONFIRMED STATE', 'fg=green', '# ');
         }
 
-        if($this->randomized){
+        if ($this->randomized) {
             $io->block(PHP_EOL.PHP_EOL.$issue->getCodeRandomized().PHP_EOL, 'CODE', 'fg=white', '# ');
         } else {
             $io->block(PHP_EOL.PHP_EOL.$issue->getCode().PHP_EOL, 'CODE', 'fg=white', '# ');
@@ -123,6 +123,7 @@ class SampleAnalyzeLlmCommand extends Command
             $gptResult = $this->initialAnalysis($io, $issue);
             if ($gptResult === false) {
                 $io->error('Could not analyse sample');
+
                 return;
             }
         }
@@ -155,7 +156,7 @@ class SampleAnalyzeLlmCommand extends Command
         }
     }
 
-    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [], GptResult $parentGptResult = null)
+    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [], AnalysisResult $parentGptResult = null)
     {
         if (empty($messages)) {
             $io->block("Starting analysis '{$issue->getName()}/{$issue->getId()}", 'GPT', 'fg=gray', '# ');
@@ -176,9 +177,9 @@ class SampleAnalyzeLlmCommand extends Command
             }
             $temperature += 0.25;
             $counter++;
-        } while (!($gptResult instanceof GptResult) && $counter <= 5);
+        } while (!($gptResult instanceof AnalysisResult) && $counter <= 5);
 
-        if (!($gptResult instanceof GptResult)) {
+        if (!($gptResult instanceof AnalysisResult)) {
             $io->error("{$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return false;
@@ -190,7 +191,7 @@ class SampleAnalyzeLlmCommand extends Command
         return $gptResult;
     }
 
-    public function setupSandbox(Issue $issue, GptResult $gptResult)
+    public function setupSandbox(Sample $issue, AnalysisResult $gptResult)
     {
         // get source directory of sample
         $sourceDirectory = $this->projectDir.dirname(dirname($issue->getFilepath()));
@@ -335,7 +336,7 @@ EOT;
 
         $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? [], $gptResult);
 
-        if (!($gptResult instanceof GptResult)) {
+        if (!($gptResult instanceof AnalysisResult)) {
             return false;
         }
 
@@ -375,13 +376,13 @@ EOT;
 
                 return false;
             }
-            if($temperature < 2) {
+            if ($temperature < 2) {
                 $temperature += 0.25;
             }
             $counter++;
-        } while (!($gptResult instanceof GptResult) && $counter <= 10);
+        } while (!($gptResult instanceof AnalysisResult) && $counter <= 10);
 
-        if (!($gptResult instanceof GptResult)) {
+        if (!($gptResult instanceof AnalysisResult)) {
             $io->error("{$issue->getName()} / CWE {$issue->getCweId()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return false;

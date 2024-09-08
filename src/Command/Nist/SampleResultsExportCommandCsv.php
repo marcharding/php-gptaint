@@ -2,8 +2,7 @@
 
 namespace App\Command\Nist;
 
-use App\Entity\GptResult;
-use App\Entity\Issue;
+use App\Entity\Sample;
 use App\Service\Stats;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -41,7 +40,7 @@ class SampleResultsExportCommandCsv extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $issues = $this->entityManager->getRepository(Issue::class)->findAll();
+        $issues = $this->entityManager->getRepository(Sample::class)->findAll();
 
         if (!$input->getArgument('outputFile')) {
             $outputFile = $this->projectDir.'/results_'.time().'.csv';
@@ -90,5 +89,4 @@ class SampleResultsExportCommandCsv extends Command
 
         return Command::SUCCESS;
     }
-
 }

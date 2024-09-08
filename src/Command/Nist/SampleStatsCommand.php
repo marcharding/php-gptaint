@@ -15,7 +15,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class SampleStatsCommand extends Command
 {
-
     protected function configure(): void
     {
         $this

@@ -2,26 +2,26 @@
 
 namespace App\Repository;
 
-use App\Entity\GptResult;
+use App\Entity\AnalysisResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<GptResult>
+ * @extends ServiceEntityRepository<AnalysisResult>
  *
- * @method GptResult|null find($id, $lockMode = null, $lockVersion = null)
- * @method GptResult|null findOneBy(array $criteria, array $orderBy = null)
- * @method GptResult[]    findAll()
- * @method GptResult[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method AnalysisResult|null find($id, $lockMode = null, $lockVersion = null)
+ * @method AnalysisResult|null findOneBy(array $criteria, array $orderBy = null)
+ * @method AnalysisResult[]    findAll()
+ * @method AnalysisResult[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class GptResultRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, GptResult::class);
+        parent::__construct($registry, AnalysisResult::class);
     }
 
-    public function save(GptResult $entity, bool $flush = false): void
+    public function save(AnalysisResult $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
 
@@ -30,7 +30,7 @@ class GptResultRepository extends ServiceEntityRepository
         }
     }
 
-    public function remove(GptResult $entity, bool $flush = false): void
+    public function remove(AnalysisResult $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
 
@@ -39,12 +39,12 @@ class GptResultRepository extends ServiceEntityRepository
         }
     }
 
-    public function findLastGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult|null
+    public function findLastGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): AnalysisResult|null
     {
         return $this->createQueryBuilder('g')
-            ->where('g.gptResultParent IS NULL')
+            ->where('g.parentResult IS NULL')
             ->andWhere('g.issue = :issue')
-            ->andWhere('g.gptVersion LIKE :model')
+            ->andWhere('g.analyzer LIKE :model')
             ->setParameter('issue', $issue)
             ->setParameter('model', $model)
             ->orderBy('g.id', 'DESC')
@@ -56,9 +56,9 @@ class GptResultRepository extends ServiceEntityRepository
     public function findAllGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): array
     {
         return $this->createQueryBuilder('g')
-            ->where('g.gptResultParent IS NULL')
+            ->where('g.parentResult IS NULL')
             ->andWhere('g.issue = :issue')
-            ->andWhere('g.gptVersion LIKE :model')
+            ->andWhere('g.analyzer LIKE :model')
             ->setParameter('issue', $issue)
             ->setParameter('model', $model)
             ->orderBy('g.id', 'DESC')
@@ -66,17 +66,17 @@ class GptResultRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findLastGptResultByParentGptResult($gptResult): GptResult|null
+    public function findLastGptResultByParentGptResult($gptResult): AnalysisResult|null
     {
         return $this->createQueryBuilder('g')
-            ->where('g.gptResultParent = :gptResult')
+            ->where('g.parentResult = :gptResult')
             ->setParameter('gptResult', $gptResult)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
     }
 
-    public function findLastFeedbackGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): GptResult|null
+    public function findLastFeedbackGptResultByIssue($issue, $model = 'gpt-3.5-turbo%-0613'): AnalysisResult|null
     {
         $gptResult = $lastGptResult = $this->findLastGptResultByIssue($issue, $model);
         while ($gptResult) {

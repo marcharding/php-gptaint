@@ -5,134 +5,142 @@
 {% block header %}
 
     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <h1 class="text-xl font-semibold leading-6 text-gray-900">Sample {{issue.name}}</h1>
+        <h1 class="text-xl font-semibold leading-6 text-gray-900">Sample {{ issue.name }}</h1>
     </div>
 
 {% endblock %}
 
 {% block body %}
 
-    <div>
-        <div class="sm:flex sm:items-center">
-            <div class="sm:flex-auto flex justify-between">
-                <p class="mt-2 text-sm text-gray-700 font-bold">Details about the code sample</p>
 
-                <a href="{{ path('gpt_add_to_queue', {'id': issue.id}) }}"
-                   class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                    Query GPT
-                </a>
-                <a href="{{ path('gpt_add_to_queue_sync', {'id': issue.id}) }}"
-                   class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                    Query GPT (sync)
-                </a>
+    <div>
+        <div class="sm:flex sm:items-center justify-between !hidden">
+            <p class="mt-2 text-sm text-gray-700 font-bold">Details about the code sample</p>
+            <div class="flex space-x-2">
+                <a href="{{ path('gpt_add_to_queue', {'id': issue.id}) }}" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Query GPT </a>
+                <a href="{{ path('gpt_add_to_queue_sync', {'id': issue.id}) }}" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Query GPT (sync) </a>
             </div>
         </div>
-        <div class="mt-6 border-t border-gray-100">
+        <div class="border-t-0 border-gray-100">
             <dl class="divide-y divide-gray-100">
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt class="text-sm leading-6 text-gray-900">CWE-ID</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.cweId }}</dd>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                        <dt class="text-sm leading-6 text-gray-900 font-bold">
+                            <span class="pr-3">CWE-ID:</span>{{ issue.cweId }}</dt>
+                        </dt>
+                    </div>
+                    <div class="px-4 py-6 sm:grid justify-self-end text-right">
+                        <dt class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0 ">
+                            <span class="pr-3 font-bold">Confirmed state:</span>
+                            {% if issue.confirmedState == 1 %}
+                                <span class="bg-red-500 rounded px-1 inline-block">Bad</span>
+                            {% else %}
+                                <span class="bg-green-500 rounded px-1 inline-block">Good</span>
+                            {% endif %}
+                        </dt>
+                    </div>
                 </div>
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt class="text-sm leading-6 text-gray-900">Confirmed state</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.confirmedState }}</dd>
-                </div>
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt class="text-sm leading-6 text-gray-900">Psalm state</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.psalmState }}</dd>
-                </div>
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt class="text-sm leading-6 text-gray-900">Phan state</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.phanState }}</dd>
-                </div>
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt class="text-sm leading-6 text-gray-900">Snyk state</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.snykState }}</dd>
-                </div>
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <dt class="text-sm leading-6 text-gray-900">Note</dt>
-                    <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.note|nl2br }}</dd>
+                <div class="grid grid-cols-7 gap-4">
+                    <div class="py-6 col-span-2">
+                        <span class="block pb-6 text-sm text-gray-900 font-bold">Note:</span>
+                        <span class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.note|nl2br }}</span>
+                    </div>
+                    <div class="py-6 pb-0 col-span-5">
+                        <span class="block pb-1 text-sm text-gray-900 font-bold">Code (estimated tokens {{ issue.estimatedTokens }})</span>
+                        <pre>
+                            <code class="text-xs pt-0 pb-0 language-php whitespace-pre-wrap">{{ issue.code }}</code>
+                        </pre>
+                    </div>
                 </div>
             </dl>
         </div>
     </div>
 
-    {% if issue.getGptResults|length or queue|length %}
+    {% if issue.getAnalyzerResultsGroupedByAnalyzer|length %}
         <div>
             <div class="sm:flex sm:items-center">
                 <div class="sm:flex-auto">
-                    <p class="mt-12 text-sm text-gray-700 font-bold">
-                        GPT Results
-                        {% if issue.getGptResults|length %}
-                            ({{ issue.probabilityAverage }}% exploit probability average after {{ issue.getGptResults|length }} runs)
-                        {% endif %}
+                    <p class="mt-3 text-xl font-semibold  text-gray-700">
+                        Analyzer Results
                     </p>
                 </div>
             </div>
             <div class="mt-6 border-t border-gray-100">
 
-            {% for gptResult in queue %}
-                <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                    <div class="text-sm leading-6 text-gray-900">
-                        Queued for processing, currently queued at position  {{ gptResult.position }}
-                    </div>
-                </div>
-            {% endfor %}
-
-            {% for gptResult in issue.getGptResults %}
-                <div class="py-6">
-                        <div class="text-sm">
-                            <div class="font-bold py-2">
-                                Exploit probability {{ gptResult.exploitProbability }}
-                            </div>
-                            <div class="w-8/12">
-                                {{ gptResult.response|nl2br }}
-                            </div>
-                            <div class="font-bold w-8/12 pt-6">
-                                Exploit example:
-                                <pre>
-                                    <code class="font-normal text-xs pb-2 language-php">{{ gptResult.exploitExample|nl2br }}</code>
-                                </pre>
+                <div x-data="{ openAccordion: null }" class="space-y-4">
+                    {% for analyzer, gptResults in issue.analyzerResultsGroupedByAnalyzer|reverse %}
+                        <div class="analyzer-group border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                            <h3 class="analyzer-title cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-3 flex justify-between items-center"
+                                @click="openAccordion === {{ loop.index }} ? openAccordion = null : openAccordion = {{ loop.index }}">
+                                <span>{{ analyzer }}
+                                    {% if gptResults.first.exploitExampleSuccessful== 1 or gptResults.first.resultState == 1 %}
+                                        <span class="bg-red-500 rounded px-1 inline-block">Bad</span>
+                                {% else %}
+                                        <span class="bg-green-500 rounded px-1 inline-block">Good</span>
+                                    {% endif %}
+                             </span>
+                                <svg x-show="openAccordion !== {{ loop.index }}" xmlns="http://www.w3.org/2000/svg"
+                                     class="h-5 w-5 transform transition-transform" viewBox="0 0 20 20"
+                                     fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                          d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z"
+                                          clip-rule="evenodd"/>
+                                </svg>
+                                <svg x-show="openAccordion === {{ loop.index }}" xmlns="http://www.w3.org/2000/svg"
+                                     class="h-5 w-5 transform rotate-180 transition-transform" viewBox="0 0 20 20"
+                                     fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                          d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z"
+                                          clip-rule="evenodd"/>
+                                </svg>
+                            </h3>
+                            <div x-show="openAccordion === {{ loop.index }}" x-cloak class="bg-white p-6 pt-0 space-y-4">
+                                {% for gptResult in gptResults %}
+                                    <div class="py-4 border-t border-gray-200">
+                                        <div class="text-sm">
+                                            {% if gptResult.exploitExample %}
+                                                <div class="font-bold pt-2 col-span-5">
+                                                    <span class="block pb-4">Exploit example:</span>
+                                                    <div class="grid grid-cols-6 gap-4">
+                                                        <pre class="bg-gray-100 col-span-5 p-2 rounded"><code class="font-normal text-xs pb-2 language-php">{{ gptResult.exploitExample|nl2br }}</code></pre>
+                                                        <div class="justify-end items-end justify-self-end align-middle text-right flex items-center justify-center">
+                                                            <a href="{{ path('app_issue_init_sandbox', {'id': issue.id, 'gptResult': gptResult.id}) }}" class="inline-block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Run
+                                                                exploit example</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            {% if gptResult.response %}
+                                                <div class="w-12/12">
+                                                    <span class="block py-6 font-bold">LLM explaination:</span>
+                                                    <pre class="bg-gray-100 p-2 rounded text-xs break-words whitespace-pre-wrap">{{ gptResult.response|trim|nl2br }}</pre>
+                                                </div>
+                                            {% else %}
+                                                <div class="w-12/12 ">
+                                                    <pre class="bg-gray-100 p-2 rounded text-xs break-words whitespace-pre-wrap">{{ gptResult.analysisResult|trim|nl2br }}</pre>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        {% if gptResult.prompt %}
+                                            <div class="mt-4 flex items-center text-sm space-x-4">
+                                                <a href="{{ path('app_prompt_show', {'id': gptResult.prompt.id}) }}"
+                                                   class="text-blue-600 hover:underline">show prompt</a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
-                    <a href="{{ path('app_prompt_show', {'id': gptResult.prompt.id}) }}">show prompt</a>
-                    <span class="px-4">|</span>
-                    <a href="{{ path('app_issue_init_sandbox', {'id':issue.id, 'gptResult': gptResult.id}) }}">test example exploit</a>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+
             </div>
-    </div>
+        </div>
     {% endif %}
 
-    <div>
-        <div class="sm:flex sm:items-center">
-            <div class="sm:flex-auto flex justify-between mt-12">
-                <p class="text-sm text-gray-700 font-bold">Extracted code path (estimated tokens {{ issue.estimatedTokens }})</p>
-            </div>
-        </div>
-        <div class="mx-auto pb-16">
-            <pre>
-                <code class="text-xs pb-16 language-php">{{ issue.code }}</code>
-            </pre>
-        </div>
-        <div class="mx-auto pb-16">
-            <p class="text-sm text-gray-700 font-bold">Psalm result</p>
-            <pre>
-                <code class="text-xs pb-16 language-php">{{ issue.psalmResult }}</code>
-            </pre>
-        </div>
-        <div class="mx-auto pb-16">
-            <p class="text-sm text-gray-700 font-bold">Snyk result</p>
-            <pre>
-                <code class="text-xs pb-16 language-php">{{ issue.snykResult }}</code>
-            </pre>
-        </div>
-        <div class="mx-auto pb-16">
-            <p class="text-sm text-gray-700 font-bold">Phan result</p>
-            <pre>
-                <code class="text-xs pb-16 language-php">{{ issue.phanResult }}</code>
-            </pre>
-        </div>
-    </div>
+
+
 
 {% endblock %}

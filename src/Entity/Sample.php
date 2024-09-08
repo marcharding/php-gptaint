@@ -9,7 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: IssueRepository::class)]
-class Issue
+class Sample
 {
     public const StateUnkown = 99;
     public const StateGood = 0;
@@ -23,12 +23,9 @@ class Issue
     #[ORM\Column(type: Types::TEXT)]
     private ?string $code = null;
 
-    #[ORM\OneToMany(mappedBy: 'issue', targetEntity: GptResult::class)]
+    #[ORM\OneToMany(mappedBy: 'issue', targetEntity: AnalysisResult::class)]
     #[ORM\OrderBy(['id' => 'DESC'])]
     private Collection $gptResults;
-
-    #[ORM\Column(type: Types::TEXT)]
-    private ?string $psalmResult = null;
 
     #[ORM\Column(length: 255)]
     private ?string $file = null;
@@ -42,17 +39,8 @@ class Issue
     #[ORM\Column(nullable: true)]
     private ?int $confirmedState = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $psalmState = null;
-
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $note = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $snykState = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $snykResult = null;
 
     #[ORM\Column(length: 255)]
     private ?string $filepath = null;
@@ -62,21 +50,6 @@ class Issue
 
     #[ORM\Column(nullable: true)]
     private ?int $CweId = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $phanState = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $phanResult = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $phanTime = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $psalmTime = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $snykTime = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $codeRandomized = null;
@@ -89,18 +62,6 @@ class Issue
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getTaintId(): ?int
-    {
-        return $this->taintId;
-    }
-
-    public function setTaintId(int $taintId): static
-    {
-        $this->taintId = $taintId;
-
-        return $this;
     }
 
     public function getCode(): ?string
@@ -116,14 +77,31 @@ class Issue
     }
 
     /**
-     * @return Collection<int, GptResult>
+     * @return Collection<int, AnalysisResult>
      */
     public function getGptResults(): Collection
     {
         return $this->gptResults;
     }
 
-    public function addGptResult(GptResult $gptResult): static
+    public function getAnalyzerResultsGroupedByAnalyzer(): array
+    {
+        $groupedResults = [];
+
+        foreach ($this->getGptResults() as $result) {
+            $analyzer = $result->getAnalyzer();
+
+            if (!isset($groupedResults[$result->getAnalyzer().'-'.$result->getAnalyzerVersion()])) {
+                $groupedResults[$analyzer] = new ArrayCollection(); // Or another collection implementation.
+            }
+
+            $groupedResults[$analyzer]->add($result);
+        }
+
+        return $groupedResults;
+    }
+
+    public function addGptResult(AnalysisResult $gptResult): static
     {
         if (!$this->gptResults->contains($gptResult)) {
             $this->gptResults->add($gptResult);
@@ -133,7 +111,7 @@ class Issue
         return $this;
     }
 
-    public function removeGptResult(GptResult $gptResult): static
+    public function removeGptResult(AnalysisResult $gptResult): static
     {
         if ($this->gptResults->removeElement($gptResult)) {
             // set the owning side to null (unless already changed)
@@ -141,18 +119,6 @@ class Issue
                 $gptResult->setIssue(null);
             }
         }
-
-        return $this;
-    }
-
-    public function getPsalmResult(): ?string
-    {
-        return $this->psalmResult;
-    }
-
-    public function setPsalmResult(string $psalmResult): static
-    {
-        $this->psalmResult = $psalmResult;
 
         return $this;
     }
@@ -219,18 +185,6 @@ class Issue
         return $this;
     }
 
-    public function getPsalmState(): ?int
-    {
-        return $this->psalmState;
-    }
-
-    public function setPsalmState(?int $psalmState): static
-    {
-        $this->psalmState = $psalmState;
-
-        return $this;
-    }
-
     public function getNote(): ?string
     {
         return $this->note;
@@ -239,30 +193,6 @@ class Issue
     public function setNote(?string $note): static
     {
         $this->note = $note;
-
-        return $this;
-    }
-
-    public function getSnykState(): ?int
-    {
-        return $this->snykState;
-    }
-
-    public function setSnykState(?int $snykState): static
-    {
-        $this->snykState = $snykState;
-
-        return $this;
-    }
-
-    public function getSnykResult(): ?string
-    {
-        return $this->snykResult;
-    }
-
-    public function setSnykResult(?string $snykResult): static
-    {
-        $this->snykResult = $snykResult;
 
         return $this;
     }
@@ -299,66 +229,6 @@ class Issue
     public function setCweId(?int $CweId): static
     {
         $this->CweId = $CweId;
-
-        return $this;
-    }
-
-    public function getPhanState(): ?int
-    {
-        return $this->phanState;
-    }
-
-    public function setPhanState(?int $phanState): static
-    {
-        $this->phanState = $phanState;
-
-        return $this;
-    }
-
-    public function getPhanResult(): ?string
-    {
-        return $this->phanResult;
-    }
-
-    public function setPhanResult(?string $phanResult): static
-    {
-        $this->phanResult = $phanResult;
-
-        return $this;
-    }
-
-    public function getPhanTime(): ?int
-    {
-        return $this->phanTime;
-    }
-
-    public function setPhanTime(?int $phanTime): static
-    {
-        $this->phanTime = $phanTime;
-
-        return $this;
-    }
-
-    public function getPsalmTime(): ?int
-    {
-        return $this->psalmTime;
-    }
-
-    public function setPsalmTime(?int $psalmTime): static
-    {
-        $this->psalmTime = $psalmTime;
-
-        return $this;
-    }
-
-    public function getSnykTime(): ?int
-    {
-        return $this->snykTime;
-    }
-
-    public function setSnykTime(?int $snykTime): static
-    {
-        $this->snykTime = $snykTime;
 
         return $this;
     }

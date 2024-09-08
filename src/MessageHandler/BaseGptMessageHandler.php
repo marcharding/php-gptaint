@@ -2,8 +2,8 @@
 
 namespace App\MessageHandler;
 
-use App\Entity\GptResult;
-use App\Entity\Issue;
+use App\Entity\AnalysisResult;
+use App\Entity\Sample;
 use App\Message\GptMessage;
 use App\Message\GptMessageSync;
 use App\Service\GptQuery;
@@ -27,7 +27,7 @@ class BaseGptMessageHandler
     public function invoke(GptMessage|GptMessageSync $message)
     {
         $io = new SymfonyStyle(new ArgvInput(), new ConsoleOutput());
-        $issue = $this->entityManager->getRepository(Issue::class)->findOneBy(['id' => $message->getId()]);
+        $issue = $this->entityManager->getRepository(Sample::class)->findOneBy(['id' => $message->getId()]);
 
         $io->writeln("Querying GPT for plugin '{$issue->getName()}', issue id {$message->getId()}");
 
@@ -43,9 +43,9 @@ class BaseGptMessageHandler
             }
             $temperature = 0.00 + rand(0, 100) * 0.0005;
             $counter++;
-        } while (!($gptResult instanceof GptResult) && $counter <= 3);
+        } while (!($gptResult instanceof AnalysisResult) && $counter <= 3);
 
-        if (!($gptResult instanceof GptResult)) {
+        if (!($gptResult instanceof AnalysisResult)) {
             $io->error("{$issue->getName()} / {$issue->getType()} [Code-ID {$issue->getId()}, Issue-ID: {$issue->getId()}]");
 
             return;
