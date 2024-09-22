@@ -122,13 +122,14 @@ class Stats
         $results['sum'] = $count;
         $results['count'] = $count;
         $results['recall'] = ($results['truePositives'] + $results['falseNegatives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falseNegatives']) : 0;
-        $results['sensitivity'] = $results['truePositives'] != 0 ? $results['truePositives'] / $count : 0;
         $results['precision'] = ($results['truePositives'] + $results['falsePositives']) != 0 ? $results['truePositives'] / ($results['truePositives'] + $results['falsePositives']) : 0;
         $results['accuracy'] = $count != 0 ? ($results['truePositives'] + $results['trueNegatives']) / $count : 0;
         $results['specificity'] = ($results['trueNegatives'] + $results['falsePositives']) != 0 ? $results['trueNegatives'] / ($results['trueNegatives'] + $results['falsePositives']) : 0;
         $results['far'] = ($results['falsePositives'] + $results['trueNegatives']) == 0 ? 0 : $results['falsePositives'] / ($results['falsePositives'] + $results['trueNegatives']);
         $results['gscore'] = (2 * $results['recall'] * (1 - $results['far'])) / ($results['recall'] + 1 - $results['far']);
         $results['f1'] = ($results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) != 0 ? 2 * $results['truePositives'] / (2 * $results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) : 0;
+
+        $results = array_map(function ($result) { return round($result, 2); }, $results);
 
         return $results;
     }

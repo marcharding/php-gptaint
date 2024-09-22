@@ -128,7 +128,11 @@ class SampleAnalysisResultsExportCommand extends Command
         foreach ($this->statsAnalyzers as $analyzer) {
             $row = [$analyzer];
             foreach ($metrics as $metric) {
-                $row[] = $statistics[$analyzer][$metric] ?? ($metric === 'far' ? 1 - ($statistics[$analyzer][$metric] ?? 0) : 0);
+                if ($metric === 'far') {
+                    $row[] = 1 - $statistics[$analyzer][$metric];
+                } else {
+                    $row[] = $statistics[$analyzer][$metric];
+                }
             }
             file_put_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv', implode(';', $row).PHP_EOL, FILE_APPEND);
         }
