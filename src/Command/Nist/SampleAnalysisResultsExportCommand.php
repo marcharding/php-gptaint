@@ -28,7 +28,7 @@ class SampleAnalysisResultsExportCommand extends Command
         'gpt-3.5-turbo-0125',
         'gpt-4o (randomized)_wo_feedback',
         'llama-3-8b (randomized)_wo_feedback',
-        'gpt-3.5-turbo-0125 (randomized_wo_feedback',
+        'gpt-3.5-turbo-0125 (randomized)_wo_feedback',
         'gpt-4o_wo_feedback',
         'llama-3-8b_wo_feedback',
         'gpt-3.5-turbo-0125_wo_feedback',
@@ -48,7 +48,9 @@ class SampleAnalysisResultsExportCommand extends Command
             ->addOption('randomized', null, InputOption::VALUE_NONE, 'Only use the randomized versions')
             ->addOption('no-randomized', null, InputOption::VALUE_NONE, 'Only use the non-randomized versions')
             ->addOption('feedback', null, InputOption::VALUE_NONE, 'Only use the feedback versions')
-            ->addOption('no-feedback', null, InputOption::VALUE_NONE, 'Only use the non-feedback versions');
+            ->addOption('no-feedback', null, InputOption::VALUE_NONE, 'Only use the non-feedback versions')
+            ->addOption('metrics', null, InputOption::VALUE_OPTIONAL, 'Only use these metrics')
+            ->addOption('analyzer', null, InputOption::VALUE_OPTIONAL, 'Only use these analyzers');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -58,8 +60,8 @@ class SampleAnalysisResultsExportCommand extends Command
         $issues = $this->issueRepository->findAll();
         $statistics = $this->statsService->getStatistics($issues);
 
-        $this->generateResultsOverTimeCsv($statistics['statisticsOverTime']);
-        $this->generateResultsTotalCsv($statistics['statistics']);
+        $this->generateResultsOverTimeCsv($statistics['statisticsOverTime'], $input->getOption('metrics'));
+        $this->generateResultsTotalCsv($statistics['statistics'], $input->getOption('metrics'));
 
         $output->writeln('Statistics generated successfully.');
 
@@ -72,6 +74,7 @@ class SampleAnalysisResultsExportCommand extends Command
         $noRandomized = $input->getOption('no-randomized');
         $feedback = $input->getOption('feedback');
         $noFeedback = $input->getOption('no-feedback');
+        $onlyKeepTheseAnalyzers = $input->getOption('analyzer');
 
         if ($randomized) {
             $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(randomized)') !== false);
@@ -80,16 +83,21 @@ class SampleAnalysisResultsExportCommand extends Command
         }
 
         if ($feedback) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '_wo_feedback') === false);
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, 'wo_feedback') === false);
         } elseif ($noFeedback) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '_wo_feedback') !== false);
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, 'wo_feedback') !== false);
         }
 
         $this->statsAnalyzers = array_merge($this->statsAnalyzers, ['psalm', 'snyk', 'phan']);
         $this->statsAnalyzers = array_values($this->statsAnalyzers);
+
+        if ($onlyKeepTheseAnalyzers) {
+            $onlyKeepTheseAnalyzers = explode(',', $onlyKeepTheseAnalyzers);
+            $this->statsAnalyzers = array_intersect($this->statsAnalyzers, $onlyKeepTheseAnalyzers);
+        }
     }
 
-    private function generateResultsOverTimeCsv(array $statisticsOverTime): void
+    private function generateResultsOverTimeCsv(array $statisticsOverTime, $metrics): void
     {
         $maxLengths = array_map('count', $statisticsOverTime);
         $maxLength = max($maxLengths);
@@ -108,9 +116,13 @@ class SampleAnalysisResultsExportCommand extends Command
         }
     }
 
-    private function generateResultsTotalCsv(array $statistics): void
+    private function generateResultsTotalCsv(array $statistics, $metrics): void
     {
-        $metrics = ['f1', 'far', 'gscore', 'recall'];
+        if($metrics){
+            $metrics = explode(',', $metrics);
+        } else {
+            $metrics = ['recall', 'specificity', 'f1'];
+        }
         file_put_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv', 'analyzer;'.implode(';', $metrics).PHP_EOL);
 
         foreach ($this->statsAnalyzers as $analyzer) {
