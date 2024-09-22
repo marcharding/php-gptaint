@@ -115,7 +115,6 @@ To export results:
 
 ```bash
 docker compose exec webserver_app php bin/console app:sample:results:export:csv results.csv
-docker compose exec webserver_app php bin/console app:sample:results:export-timeline:csv results.csv
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --feedback
@@ -124,4 +123,9 @@ docker compose exec webserver_app php bin/console app:analysis:results:export:cs
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized --no-feedback
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --feedback
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,llama-3-8b (randomized),llama-3-8b (randomized)_wo_feedback,phan,psalm,snyk"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="recall,specificity,f1"
 ```
