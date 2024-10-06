@@ -128,7 +128,7 @@ class AnalysisResult
 
     public function getExploitExample(): ?string
     {
-        return 'curl '.str_replace(" ", "%20", trim(str_replace("curl", "", $this->exploitExample)));
+        return $this->exploitExample;
 
     }
 
