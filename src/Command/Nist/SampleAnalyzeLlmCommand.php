@@ -241,6 +241,10 @@ class SampleAnalyzeLlmCommand extends Command
             return false;
         }
 
+        $gptResult->setSandboxResponse($process->getOutput());
+        $this->entityManager->persist($gptResult);
+        $this->entityManager->flush();
+
         return $process->getOutput();
     }
 
@@ -283,7 +287,7 @@ Should the exploit already be functioning, disregard further attempts at modific
 
 Revise and enhance or validate the example exploit based on the sandbox response, if the exploit was unsuccessful.
 
-Utilize your understanding of the source code from the initial message and sandbox results in subsequent messages!
+Utilize your understanding of the source code which is included between the "### CODE ###" and ### /CODE ### in the first message markers and the sandbox results from your previous tries!
 
 Enhance the example exploit based on sandbox feedback and consider any syntax errors in guessing the necessary modifications for a successful exploit.
 

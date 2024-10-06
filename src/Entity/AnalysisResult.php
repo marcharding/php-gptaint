@@ -61,6 +61,9 @@ class AnalysisResult
     #[ORM\Column]
     private ?int $resultState = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $sandboxResponse = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -255,6 +258,18 @@ class AnalysisResult
     public function setResultState(int $resultState): static
     {
         $this->resultState = $resultState;
+
+        return $this;
+    }
+
+    public function getSandboxResponse(): ?string
+    {
+        return $this->sandboxResponse;
+    }
+
+    public function setSandboxResponse(?string $sandboxResponse): static
+    {
+        $this->sandboxResponse = $sandboxResponse;
 
         return $this;
     }
