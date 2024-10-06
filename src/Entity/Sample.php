@@ -244,4 +244,15 @@ class Sample
 
         return $this;
     }
+
+    public function getCodeContextCategory(): ?string
+    {
+        $contextPattern = '/- Context: (?P<category>\w+)/';
+        if (preg_match($contextPattern, $this->note, $matches)) {
+            $parts = explode('_', $matches['category']);
+            return reset($parts);
+        }
+
+        return 'undefined';
+    }
 }
