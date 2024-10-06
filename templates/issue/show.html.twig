@@ -12,7 +12,6 @@
 
 {% block body %}
 
-
     <div>
         <div class="sm:flex sm:items-center justify-between !hidden">
             <p class="mt-2 text-sm text-gray-700 font-bold">Details about the code sample</p>
@@ -47,11 +46,32 @@
                         <span class="block pb-6 text-sm text-gray-900 font-bold">Note:</span>
                         <span class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">{{ issue.note|nl2br }}</span>
                     </div>
-                    <div class="py-6 pb-0 col-span-5">
-                        <span class="block pb-1 text-sm text-gray-900 font-bold">Code (estimated tokens {{ issue.estimatedTokens }})</span>
-                        <pre>
-                            <code class="text-xs pt-0 pb-0 language-php whitespace-pre-wrap">{{ issue.code }}</code>
-                        </pre>
+                    <div class="py-6 pb-0 col-span-5" x-data="{ code: true, codeObfuscated: false }">
+                       <span class="block pb-1 text-sm text-gray-900 font-bold cursor-pointer" @click="code = (code === true ? false : true)">
+                            Code (estimated tokens {{ issue.estimatedTokens }})
+                            <svg x-show="code !== true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z" clip-rule="evenodd"/>
+                            </svg>
+                            <svg x-show="code === true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block transform rotate-180" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        <div x-show="code === true" x-cloak>
+                            <pre><code class="text-xs pt-0 pb-0 language-php whitespace-pre-wrap">{{ issue.code }}</code></pre>
+                        </div>
+
+                        <span class="block pt-2 pb-1 text-sm text-gray-900 font-bold cursor-pointer" @click="codeObfuscated = (codeObfuscated === true ? false : true)">
+                            Code obfuscated (estimated tokens {{ issue.estimatedTokens }})
+                            <svg x-show="codeObfuscated !== true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z" clip-rule="evenodd"/>
+                            </svg>
+                            <svg x-show="codeObfuscated === true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block transform rotate-180" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        <div x-show="codeObfuscated === true" x-cloak>
+                            <pre><code class="text-xs pt-0 pb-0 language-php whitespace-pre-wrap">{{ issue.codeRandomized }}</code></pre>
+                        </div>
                     </div>
                 </div>
             </dl>
