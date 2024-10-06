@@ -1,0 +1,29 @@
+\subsection{Sample {{ issue.name }}}
+
+\paragraph*{Code-Fragment}
+
+\begin{minted}[fontsize=\scriptsize]{php}
+{{ issue.code|raw }}
+\end{minted}
+
+\paragraph*{Code-Fragment (obfuksiert)}
+
+\begin{minted}[fontsize=\scriptsize]{php}
+{{ issue.codeRandomized|raw }}
+\end{minted}
+
+{% for analyzer, results in results %}
+
+\paragraph*{Analyse-Ergebnisse {{ analyzer }}}
+\begin{minted}[fontsize=\scriptsize,breaklines,breaksymbolleft={}]{text}
+{{ (results|last).analysisResult|raw }}
+\end{minted}
+
+{% if results|length > 1 and (results|last).exploitExample %}
+\paragraph*{Exploit-Beispiel {{ analyzer }}}
+\begin{minted}[fontsize=\scriptsize,breaklines,breaksymbolleft={}]{text}
+{{ (results|last).exploitExample|raw }}
+\end{minted}
+{% endif %}
+
+{% endfor %}
