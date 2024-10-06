@@ -255,26 +255,31 @@ class SampleAnalyzeLlmCommand extends Command
             $io->block(trim($sandboxResult));
 
             $prompt = <<<EOT
-# Instruction:
+### INSTRUCTIONS:
 
-This prompt relates to your example exploitation from a prior request, found at the end under "# Executed Example Exploit:" which was trialed on a research sandbox. 
-The response from sandbox along with the resulting observations are documented at the end of this message under "# Sandbox Response:". 
+This prompt relates to your example exploitation from a prior request.
+The tested exploit is found at the end between the markers "### EXECUTED EXAMPLE EXPLOIT ###" und "### /EXECUTED EXAMPLE EXPLOIT ###" which was trialed on a research sandbox.
+The HTTP response from sandbox to the exploit is found between these markers "### SANDBOX RESPONSE ###" und "### /SANDBOX RESPONSE ###".
 
 Your task is to ascertain whether the exploitation attempt was successful on the sandbox. 
 
-Remember that the sandbox only provides an HTML response. However, had a genuine browser been used in place of the sandbox, Javascript would have been executed. Therefore, consider this in your assessment of the exploit's success. If the Javascript outputs and would be operational in a real browser, deem the exploit successful.
+Remember that the sandbox only provides an HTML response. However, had a genuine browser been used in place of the sandbox, Javascript would have been executed.
+Therefore, consider this in your assessment of the exploit's success. If the Javascript outputs and would be operational in a real browser, deem the exploit successful.
 
-Proceed as per the outcomes. If successful, follow the instructions under "## Successful Exploit:"; otherwise, follow those under "## Unsuccessful Exploit:".
+Proceed as per the outcomes. If successful, follow the instructions under "### CASE SUCCESSFUL EXPLOIT:"; otherwise, follow those under "### CASE UNSUCCESSFUL EXPLOIT:".
 
-## Successful Exploit:
+### CASE SUCCESSFUL EXPLOIT:
 
 If the previous exploit attempt worked based on the sandbox response, return the JSON structure described later in this prompt.
 
-Set the 'exploitSuccessful' field to true if the exploit appears to operate under sandbox's unique conditions. 
+Important: Thoroughly analyse the response of the sandbox to determine if the exploit was successful (e.g. leaked data or injected code is returned).
+Only set the 'exploitSuccessful' field to true if you are sure that the exploit was successfully executed against the sandbox.
+
+Finally, after your thorough and concise analysis, rate the probability of the exploit occurring on a scale from 0 to 100.
 
 Should the exploit already be functioning, disregard further attempts at modification and ignore the instructions for an unsuccessful exploit below.
 
-## Unsuccessful Exploit:
+### CASE UNSUCCESSFUL EXPLOIT:
 
 Revise and enhance or validate the example exploit based on the sandbox response, if the exploit was unsuccessful.
 
@@ -291,13 +296,13 @@ Begin with the simplest and likely modifications, escalating complexity if those
 
 Critically, do not resubmit the same exploit without significant modifications if it was unsuccessful the first time! 
 
-If the prior exploit performed better (like a blank response vs an error), use it as a basis for further attempts.
+If the prior exploit performed better (like a blank response before now results in an error), use it as a basis for further attempts.
 
 The example exploit provided must be a curl request. Verify the correctness of curl command syntax!
 
 Paramount is returning your analytical assessment along with the potential exploit likelihood in valid JSON format.
 
-# Response JSON Format:
+### RESPONSE JSON FORMAT:
 
 JSON: {
     'analysisResult': 'DETAILED_ANALYSIS_RESULT',
@@ -306,13 +311,19 @@ JSON: {
     'exploitSuccessful': 'EXPLOIT_STATUS_AS_BOOLEAN',
 }
  
-# Executed Example Exploit:
+### EXECUTED EXAMPLE EXPLOIT ###
 
 {$gptResult->getExploitExample()}
 
-# Sandbox Response:
+### /EXECUTED EXAMPLE EXPLOIT ###
+
+### SANDBOX RESPONSE ###
 
 $sandboxResult;
+
+### /SANDBOX RESPONSE ###
+
+
 EOT;
 
             foreach ($gptResult->getMessage() as $item) {

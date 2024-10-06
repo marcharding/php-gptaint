@@ -89,7 +89,7 @@ class GptQuery
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => "$promptMessage \n \n \n $code",
+                    'content' => "$promptMessage \n \n \n ### CODE ### \n $code \n ### /CODE ###",
                 ],
             ],
             'functions' => [
