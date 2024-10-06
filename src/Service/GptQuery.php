@@ -239,11 +239,13 @@ class GptQuery
         $gptResult = new AnalysisResult();
         $gptResult->setIssue($issue);
         $gptResult->setAnalyzer($modeName);
+        $gptResult->setAnalyzerVersion($response->model);
         $gptResult->setPrompt($promptEntity);
         $gptResult->setPromptMessage($promptMessage);
         $gptResult->setResponse($completeResult);
         $gptResult->setAnalysisResult($analysisResult);
         $gptResult->setExploitProbability($exploitProbability);
+        $gptResult->setResultState(filter_var($exploitSuccessful ?? false, FILTER_VALIDATE_BOOLEAN));
         $gptResult->setExploitExample($exploitExample);
         $gptResult->setExploitExampleSuccessful(filter_var($exploitSuccessful ?? false, FILTER_VALIDATE_BOOLEAN));
         $gptResult->setTime($duration);
