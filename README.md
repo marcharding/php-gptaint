@@ -129,3 +129,20 @@ docker compose exec webserver_app php bin/console app:analysis:results:export:cs
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="recall,specificity,f1"
 ```
+
+To export detailed results per issue:
+
+```bash
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --randomized
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-randomized
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --randomized --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --randomized --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-randomized --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-randomized --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,llama-3-8b (randomized),llama-3-8b (randomized)_wo_feedback,phan,psalm,snyk"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
+```
