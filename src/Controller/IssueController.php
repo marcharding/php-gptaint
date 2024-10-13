@@ -4,12 +4,15 @@ namespace App\Controller;
 
 use App\Entity\AnalysisResult;
 use App\Entity\Sample;
+use App\Repository\GptResultRepository;
 use App\Repository\IssueRepository;
 use App\Service\TaintTypes;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
@@ -20,15 +23,69 @@ use Symfony\Component\Routing\Annotation\Route;
 class IssueController extends AbstractController
 {
     #[Route('/', name: 'app_issue_index', methods: ['GET'])]
-    public function index(IssueRepository $issueRepository): Response
+    public function index(IssueRepository $issueRepository, EntityManagerInterface $entityManager): Response
     {
+        $analyzers = $entityManager->getConnection()
+            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result')
+            ->fetchAllAssociative();
+
         return $this->render('issue/index.html.twig', [
             'issues' => $issueRepository->findAll(),
+            'analyzers' => $analyzers,
+            'analyzer' => null,
+            'type' => null,
         ]);
     }
 
-    #[Route('/{id}', name: 'app_issue_show', methods: ['GET'])]
-    public function show(Sample $issue, ManagerRegistry $managerRegistry): Response
+    #[Route('/filtered', name: 'app_issue_index_filtered', methods: ['GET'])]
+    public function indexFiltered(IssueRepository $issueRepository, GptResultRepository $gptResultRepository, EntityManagerInterface $entityManager, Request $request): Response
+    {
+        $analyzer = $request->query->get('analyzer');
+        $type = $request->query->get('type');
+
+        $analyzers = $entityManager->getConnection()
+            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result')
+            ->fetchAllAssociative();
+
+        $issues = $issueRepository->findAll();
+        $filtered = [];
+        foreach ($issues as $issue) {
+            $gptResult = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, $analyzer);
+            if (!$gptResult) {
+                continue;
+            }
+
+            $meetsCriteria = false;
+
+            if ($type === 'tp' && $issue->getConfirmedState() == 1 && $gptResult->getResultState() == 1) {
+                $meetsCriteria = true;
+            } elseif ($type === 'fp' && $issue->getConfirmedState() == 0 && $gptResult->getResultState() == 1) {
+                $meetsCriteria = true;
+            } elseif ($type === 'tn' && $issue->getConfirmedState() == 0 && $gptResult->getResultState() == 0) {
+                $meetsCriteria = true;
+            } elseif ($type === 'fn' && $issue->getConfirmedState() == 1 && $gptResult->getResultState() == 0) {
+                $meetsCriteria = true;
+            } elseif ($type === null) {
+                $meetsCriteria = true;
+            }
+
+            if ($meetsCriteria === false) {
+                continue;
+            }
+
+            $filtered[] = $issue;
+        }
+
+        return $this->render('issue/index.html.twig', [
+            'issues' => $filtered,
+            'analyzers' => $analyzers,
+            'analyzer' => $analyzer,
+            'type' => $type,
+        ]);
+    }
+
+    #[Route('/{id}', name: 'app_issue_show', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function show(Sample $issue, ManagerRegistry $managerRegistry, GptResultRepository $gptResultRepository): Response
     {
         $phpSerializer = new PhpSerializer();
         $connection = $managerRegistry->getConnection();
@@ -48,13 +105,19 @@ class IssueController extends AbstractController
                 }
             }, $result));
 
+        $resultsByAnalyzer = [];
+        foreach ($issue->getAnalyzerResultsGroupedByAnalyzer() as $analyzer => $groupedResult) {
+            $resultsByAnalyzer[$analyzer][] = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, $analyzer);
+        }
+
         return $this->render('issue/show.html.twig', [
             'queue' => $result,
             'issue' => $issue,
+            'resultsByAnalyzer' => $resultsByAnalyzer,
         ]);
     }
 
-    #[Route('/{id}/init-sandbox/{gptResult}', name: 'app_issue_init_sandbox', methods: ['GET'])]
+    #[Route('/{id}/init-sandbox/{gptResult}', name: 'app_issue_init_sandbox', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function initSandbox(Sample $issue, AnalysisResult $gptResult, string $projectDir): Response
     {
         // get source directory of sample

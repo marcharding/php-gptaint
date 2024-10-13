@@ -1,15 +1,33 @@
 {% extends 'base.html.twig' %}
 
 {% block header %}
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <h1 class="text-xl font-semibold leading-6 text-gray-900">Samples overview</h1>
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between align-middle">
+        <h1 class="text-xl align-middle font-semibold leading-6 text-gray-900">Samples overview</h1>
+        <form method="get" action="{{ path('app_issue_index_filtered') }}">
+            <div class="flex space-x-2">
+                <select name="analyzer" class="text-sm block w-1/2 bg-white border border-gray-300 text-gray-700 py-1 px-1.5 rounded leading-tight focus:outline-none focus:border-blue-500">
+                    <option value="" disabled selected>Select Analyzer</option>
+                    {% for analyzerOption in analyzers %}
+                        <option value="{{ analyzerOption.analyzer }}" {% if analyzerOption.analyzer == analyzer %}selected{% endif %}>{{ analyzerOption.analyzer }}</option>
+                    {% endfor %}
+                </select>
+                <select name="type" class="text-sm block w-1/2 bg-white border border-gray-300 text-gray-700 py-1 px-1.5 rounded leading-tight focus:outline-none focus:border-blue-500">
+                    <option value="" disabled selected>Select Type</option>
+                    <option value="tp" {% if type == 'tp' %}selected{% endif %}>True Positive</option>
+                    <option value="fp" {% if type == 'fp' %}selected{% endif %}>False Positive</option>
+                    <option value="tn" {% if type == 'tn' %}selected{% endif %}>True Negative</option>
+                    <option value="fn" {% if type == 'fn' %}selected{% endif %}>False Negative</option>
+                </select>
+                <button type="submit" class="block w-32 rounded-md bg-gray-500 px-1.5 py-1 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Filter</button>
+            </div>
+        </form>
     </div>
 {% endblock %}
 
 {% block body %}
     <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto">
-            <p class="mt-2 text-sm text-gray-700">List of all samples</p>
+            <p class="mt-6 text-sm text-gray-700">List of all samples</p>
         </div>
     </div>
     <div class="mt-8 flow-root">

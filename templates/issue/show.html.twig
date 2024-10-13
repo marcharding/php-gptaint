@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    {% if issue.getAnalyzerResultsGroupedByAnalyzer|length %}
+    {% if resultsByAnalyzer|length %}
         <div>
             <div class="sm:flex sm:items-center">
                 <div class="sm:flex-auto">
@@ -90,12 +90,13 @@
             <div class="mt-6 border-t border-gray-100">
 
                 <div x-data="{ openAccordion: null }" class="space-y-4">
-                    {% for analyzer, gptResults in issue.analyzerResultsGroupedByAnalyzer|reverse %}
+                    {% for analyzer, gptResults in resultsByAnalyzer %}
                         <div class="analyzer-group border border-gray-300 rounded-lg overflow-hidden shadow-sm">
                             <h3 class="analyzer-title cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-3 flex justify-between items-center"
                                 @click="openAccordion === {{ loop.index }} ? openAccordion = null : openAccordion = {{ loop.index }}">
                                 <span>{{ analyzer }}
-                                    {% if gptResults.first.exploitExampleSuccessful== 1 or gptResults.first.resultState == 1 %}
+
+                                    {% if (gptResults|first).exploitExampleSuccessful== 1 or (gptResults|first).resultState == 1 %}
                                         <span class="bg-red-500 rounded px-1 inline-block">Bad</span>
                                 {% else %}
                                         <span class="bg-green-500 rounded px-1 inline-block">Good</span>

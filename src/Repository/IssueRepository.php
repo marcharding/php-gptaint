@@ -93,4 +93,46 @@ class IssueRepository extends ServiceEntityRepository
              ->getQuery()
             ->getResult();
     }
+
+    public function findByAnalyzerResults($analyzer, $type = null): array
+    {
+        $results = [];
+
+        // Retrieve all initial issues or items using the supplied analyzer
+        $initialItems = $this->createQueryBuilder('i')
+            ->innerJoin('i.gptResults', 'g')
+            ->andWhere('g.analyzer = :analyzer')
+            ->setParameter('analyzer', $analyzer)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($initialItems as $item) {
+            // Find the last GPT result associated with the item
+            $gptResult = $this->findLastGptResultByIssue($item);
+
+            if (!$gptResult) {
+                continue;
+            }
+
+            $meetsCriteria = false;
+            if ($type === 'tp' && $item->getConfirmedState() == 1 && $gptResult->getResultState() == 1) {
+                $meetsCriteria = true;
+            } elseif ($type === 'fp' && $item->getConfirmedState() == 0 && $gptResult->getResultState() == 1) {
+                $meetsCriteria = true;
+            } elseif ($type === 'tn' && $item->getConfirmedState() == 0 && $gptResult->getResultState() == 0) {
+                $meetsCriteria = true;
+            } elseif ($type === 'fn' && $item->getConfirmedState() == 1 && $gptResult->getResultState() == 0) {
+                $meetsCriteria = true;
+            } elseif ($type === null) {
+                // If no specific type is given, include all results
+                $meetsCriteria = true;
+            }
+
+            if ($meetsCriteria) {
+                $results[] = $item;
+            }
+        }
+
+        return $results;
+    }
 }
