@@ -273,4 +273,15 @@ class AnalysisResult
 
         return $this;
     }
+
+    public function getParentCount(): int
+    {
+        $i = 0;
+        $self = $this;
+        while($self->getParentResult() !== null){
+            $i++;
+            $self = $self->getParentResult();
+        }
+        return $i;
+    }
 }
