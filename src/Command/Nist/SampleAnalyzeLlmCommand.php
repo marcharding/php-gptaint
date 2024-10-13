@@ -251,7 +251,7 @@ class SampleAnalyzeLlmCommand extends Command
         return $process->getOutput();
     }
 
-    public function startFeedbackLoop($io, $issue, $gptResult, $messages = [])
+    public function startFeedbackLoop($io, $issue, $gptResult, $messages = [], $compressedFeedBackPrompt = true)
     {
         if ($gptResult) {
             // get the sandbox result to provide some kind of ground truth to the llm
@@ -317,7 +317,8 @@ JSON: {
     'exploitExample': 'EXPLOIT_EXAMPLE_USING_cURL',
     'exploitSuccessful': 'EXPLOIT_STATUS_AS_BOOLEAN',
 }
- 
+
+{% if promptContext is empty %}
 ### EXECUTED EXAMPLE EXPLOIT ###
 
 {{ result.exploitExample|raw }}
@@ -326,17 +327,61 @@ JSON: {
 
 ### SANDBOX RESPONSE ###
 
-{{ result.sandboxResponse|raw }}
+{% if result.sandboxResponse is empty %}
+   SANDBOX RESPONSE EMPTY
+{% else %}
+    {{ result.sandboxResponse|raw }}
+{% endif %}
 
 ### /SANDBOX RESPONSE ###
+{% endif %}
 
+{% for promptContextEntry in promptContext %}
+### PREVIOUS TRY {{ loop.index }} ###
+
+## EXECUTED EXAMPLE EXPLOIT {{ loop.index }} ###
+
+{{ promptContextEntry.exploitExample|raw }}
+
+## /EXECUTED EXAMPLE EXPLOIT {{ loop.index }}###
+
+## SANDBOX RESPONSE {{ loop.index }} ###
+
+{% if promptContextEntry.sandboxResponse is empty %}
+    {{ "SANDBOX RESPONSE EMPTY" }}
+{% else %}
+    {{ promptContextEntry.sandboxResponse|raw }}
+{% endif %}
+
+## /SANDBOX RESPONSE {{ loop.index }} ###
+
+### /PREVIOUS TRY {{ loop.index }} ###
+{% endfor %}
 
 EOT;
 
-            $prompt = $this->twig->createTemplate($prompt)->render(['result' => $gptResult]);
+            if ($compressedFeedBackPrompt === true) {
+                $currentGptResult = $gptResult;
+                do {
+                    $promptContext[] = [
+                        'exploitExample' => $currentGptResult->getExploitExample(),
+                        'sandboxResponse' => $currentGptResult->getSandboxResponse(),
+                    ];
+                    $currentGptResult = $currentGptResult->getParentResult();
+                } while ($currentGptResult !== null);
+
+                $promptContext = array_reverse($promptContext);
+            }
+
+            $prompt = $this->twig->createTemplate($prompt)->render(['result' => $gptResult, 'promptContext' => $promptContext]);
 
             foreach ($gptResult->getMessage() as $item) {
                 $messages[] = $item;
+            }
+
+            // the first two are the initial message and the response.
+            if ($compressedFeedBackPrompt === true) {
+                $messages = array_slice($messages, 0, 2);
             }
 
             $messages[] = [
@@ -352,7 +397,7 @@ EOT;
             ];
         }
 
-        $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user'));
+        $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user')) + count($promptContext ?? []);
 
         $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? [], $gptResult);
 
@@ -376,7 +421,7 @@ EOT;
         // and will add exactly this message again, when adding it from the gptMessage in the next lookup
         array_pop($messages);
 
-        return $this->startFeedbackLoop($io, $issue, $gptResult, $messages);
+        return $this->startFeedbackLoop($io, $issue, $gptResult, $messages, $compressedFeedBackPrompt);
     }
 
     public function initialAnalysis($io, $issue)
