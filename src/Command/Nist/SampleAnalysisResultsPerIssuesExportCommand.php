@@ -22,6 +22,7 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
     private string $projectDir;
     private array $statsAnalyzers = [
         'gpt-4o (randomized)',
+        'gpt-4o-mini (randomized)',
         'llama-3-8b (randomized)',
         'gpt-3.5-turbo-0125 (randomized)',
         'gpt-4o',

@@ -34,7 +34,7 @@ class SampleAnalyzeLlmCommand extends Command
     private bool $randomized = false;
     private Environment $twig;
 
-    public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery,  Environment $twig)
+    public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery, Environment $twig)
     {
         parent::__construct();
         $this->projectDir = $projectDir;
