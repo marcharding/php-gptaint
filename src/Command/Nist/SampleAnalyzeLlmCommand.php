@@ -18,6 +18,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
+use Twig\Environment;
 
 #[AsCommand(
     name: 'app:sample:analyze:llm',
@@ -31,13 +32,15 @@ class SampleAnalyzeLlmCommand extends Command
     private string $projectDir;
     private string $model;
     private bool $randomized = false;
+    private Environment $twig;
 
-    public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery)
+    public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery,  Environment $twig)
     {
         parent::__construct();
         $this->projectDir = $projectDir;
         $this->entityManager = $entityManager;
         $this->gptQueryService = $gptQuery;
+        $this->twig = $twig;
     }
 
     protected function configure(): void
@@ -317,18 +320,20 @@ JSON: {
  
 ### EXECUTED EXAMPLE EXPLOIT ###
 
-{$gptResult->getExploitExample()}
+{{ result.exploitExample|raw }}
 
 ### /EXECUTED EXAMPLE EXPLOIT ###
 
 ### SANDBOX RESPONSE ###
 
-$sandboxResult;
+{{ result.sandboxResponse|raw }}
 
 ### /SANDBOX RESPONSE ###
 
 
 EOT;
+
+            $prompt = $this->twig->createTemplate($prompt)->render(['result' => $gptResult]);
 
             foreach ($gptResult->getMessage() as $item) {
                 $messages[] = $item;
