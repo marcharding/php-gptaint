@@ -1,12 +1,12 @@
-\subsection{Sample {{ issue.name }}}
+\section{Sample {{ issue.name }}}
 
-\paragraph*{Code-Fragment}
+\subsection*{Code-Fragment}
 
 \begin{minted}[fontsize=\scriptsize]{php}
 {{ issue.code|raw }}
 \end{minted}
 
-\paragraph*{Code-Fragment (obfuksiert)}
+\subsection*{Code-Fragment (obfuksiert)}
 
 \begin{minted}[fontsize=\scriptsize]{php}
 {{ issue.codeRandomized|raw }}
@@ -14,16 +14,32 @@
 
 {% for analyzer, results in results %}
 
-\paragraph*{Analyse-Ergebnisse {{ analyzer }}}
+\section*{Analyse-Ergebnis {{ analyzer }}}
+
+{% for analysisResult in results|reverse %}
+
+\subsection*{Versuch {{ loop.index }} }
+
 \begin{minted}[fontsize=\scriptsize,breaklines,breaksymbolleft={}]{text}
-{{ (results|last).analysisResult|raw }}
+{{ analysisResult.analysisResult|raw }}
 \end{minted}
 
-{% if results|length > 1 and (results|last).exploitExample %}
-\paragraph*{Exploit-Beispiel {{ analyzer }}}
+{% if analysisResult.exploitExample is not empty %}
+
+\subparagraph*{Exploit}
 \begin{minted}[fontsize=\scriptsize,breaklines,breaksymbolleft={}]{text}
-{{ (results|last).exploitExample|raw }}
+{{ analysisResult.exploitExample|raw }}
 \end{minted}
 {% endif %}
+
+{% if analysisResult.sandboxResponse is not empty %}
+
+\subparagraph*{Rückgabe der Sandbox}
+\begin{minted}[fontsize=\scriptsize,breaklines,breaksymbolleft={}]{text}
+{{ analysisResult.sandboxResponse|raw }}
+\end{minted}
+{% endif %}
+
+{% endfor %}
 
 {% endfor %}
