@@ -159,12 +159,11 @@ class SampleAnalyzeLlmCommand extends Command
         }
     }
 
-    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [], AnalysisResult $parentGptResult = null)
+    public function queryGpt($io, $issue, $messages = [], $additionalFunctions = [], AnalysisResult $parentGptResult = null, $numberOfUserMessage = 0)
     {
         if (empty($messages)) {
             $io->block("Starting analysis '{$issue->getName()}/{$issue->getId()}", 'GPT', 'fg=gray', '# ');
         } else {
-            $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user'));
             $io->block("Refine or confirm (Iteration {$numberOfUserMessage}) for '{$issue->getName()}/{$issue->getId()}", 'GPT', 'fg=gray', '# ');
         }
 
@@ -397,9 +396,9 @@ EOT;
             ];
         }
 
-        $numberOfUserMessage = count(array_filter($messages, fn ($message) => $message['role'] === 'user')) + count($promptContext ?? []);
+        $numberOfUserMessage = count($promptContext ?? []);
 
-        $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? [], $gptResult);
+        $gptResult = $this->queryGpt($io, $issue, $messages, $functions ?? [], $gptResult, $numberOfUserMessage);
 
         if (!($gptResult instanceof AnalysisResult)) {
             return false;
