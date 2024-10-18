@@ -29,25 +29,39 @@ class SampleAnalysisLlmResultsDetailsExportCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('issueIds', InputArgument::OPTIONAL, 'Issue id which should be analyzed (issue must be complete).');
+            ->addArgument('issueIds', InputArgument::OPTIONAL, 'Comma-separated issue ids which should be analyzed (issues must be complete).');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $issueId = (int) $input->getArgument('issueId');
-        $issue = $this->issueRepository->findOne($issueId);
-        $gptResults = $issue->getGptResults();
+        $issueIds = $input->getArgument('issueIds');
+        $ids = array_map('trim', explode(',', $issueIds)); // Split by commas and trim whitespace
 
-        foreach ($gptResults as $gptResult) {
-            $groupedGptResults[$gptResult->getAnalyzer()][] = $gptResult;
+        foreach ($ids as $issueId) {
+            $groupedGptResults = [];
+            $issue = $this->issueRepository->find((int) $issueId); // Retrieve each issue by ID
+
+            if ($issue === null) {
+                $output->writeln("Issue with ID $issueId not found.");
+                continue; // Skip to the next ID
+            }
+
+            $gptResults = $issue->getGptResults();
+
+            foreach ($gptResults as $gptResult) {
+                if ($gptResult->getAnalyzer()) {
+                    $groupedGptResults[$gptResult->getAnalyzer()][] = $gptResult;
+                }
+            }
+
+            $latexOutput = $this->twig->render('/helper/latexResult.html.twig', [
+                'issue' => $issue,
+                'results' => $groupedGptResults,
+            ]);
+
+            $output->writeln($latexOutput);
+
         }
-
-        $latexOutput = $this->twig->render('/helper/latexResult.html.twig', [
-            'issue' => $issue,
-            'results' => $groupedGptResults,
-        ]);
-
-        $output->write($latexOutput);
 
         return Command::SUCCESS;
     }
