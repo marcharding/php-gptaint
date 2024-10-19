@@ -15,7 +15,7 @@
         "mediawiki/phan-taint-check-plugin": "^6.0",
         "nikic/php-parser": "^4.16",
         "nyholm/psr7": "^1.8",
-        "openai-php/client": "^0.6.3",
+        "openai-php/client": "^0.8.4",
         "phpdocumentor/reflection-docblock": "^5.3",
         "phpstan/phpdoc-parser": "^1.22",
         "symfony/apache-pack": "^1.0",
