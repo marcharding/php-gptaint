@@ -102,29 +102,32 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
     {
         $rows = [];
         $header = [];
-        $header[] = 'issue';
+
         $possibleAnalyzers = reset($statisticsOverTime);
         foreach ($possibleAnalyzers['analyzers'] as $analyzer => $analyzerResults) {
             if (!in_array($analyzer, $this->statsAnalyzers)) {
                 continue;
             }
-            $header[] = $analyzer;
             $header[] = "$analyzer (Count)";
         }
+        asort($header);
+        array_unshift($header, 'issue');
         $rows[] = $header;
 
         foreach ($statisticsOverTime as $issue => $results) {
             $row = [];
-            $row[] = $issue;
+
 
             foreach ($results['analyzers'] as $analyzer => $analyzerResults) {
                 if (!in_array($analyzer, $this->statsAnalyzers)) {
                     continue;
                 }
+
                 $result = array_search(1, $analyzerResults, true);
-                $row[] = $result;
-                $row[] = $analyzerResults['triesCount'] ?? 0;
+                $row[] = "$result (".($analyzerResults['triesCount'] ?? 1).')';
             }
+            ksort($row);
+            array_unshift($row, $issue);
             $rows[] = $row;
         }
 
