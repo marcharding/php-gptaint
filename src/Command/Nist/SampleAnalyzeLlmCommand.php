@@ -244,7 +244,7 @@ class SampleAnalyzeLlmCommand extends Command
             return false;
         }
 
-        $gptResult->setSandboxResponse($process->getOutput());
+        $gptResult->setSandboxResponse(@iconv('UTF-8', 'UTF-8//IGNORE', $process->getOutput()));
         $this->entityManager->persist($gptResult);
         $this->entityManager->flush();
 
