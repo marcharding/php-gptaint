@@ -4,6 +4,7 @@ namespace App\Command\Nist;
 
 use App\Repository\IssueRepository;
 use App\Service\Stats;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,26 +20,24 @@ class SampleAnalysisResultsExportCommand extends Command
     private Stats $statsService;
     private IssueRepository $issueRepository;
     private string $projectDir;
-    private array $statsAnalyzers = [
-        'gpt-4o (randomized)',
-        'llama-3-8b (randomized)',
-        'gpt-3.5-turbo-0125 (randomized)',
-        'gpt-4o',
-        'llama-3-8b',
-        'gpt-3.5-turbo-0125',
-        'gpt-4o (randomized)_wo_feedback',
-        'llama-3-8b (randomized)_wo_feedback',
-        'gpt-3.5-turbo-0125 (randomized)_wo_feedback',
-        'gpt-4o_wo_feedback',
-        'llama-3-8b_wo_feedback',
-        'gpt-3.5-turbo-0125_wo_feedback',
-    ];
+    private array $statsAnalyzers = [];
+    private EntityManagerInterface $entityManager;
 
-    public function __construct(string $projectDir, Stats $statsService, IssueRepository $issueRepository)
+    public function __construct(string $projectDir, Stats $statsService, IssueRepository $issueRepository, EntityManagerInterface $entityManager)
     {
         $this->projectDir = $projectDir;
         $this->statsService = $statsService;
         $this->issueRepository = $issueRepository;
+        $this->entityManager = $entityManager;
+        $modelValues = $this->entityManager->getConnection()
+            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result')
+            ->fetchAllAssociative();
+        $modelValues = array_column($modelValues, 'analyzer');
+        $modelValuesWoFeedback = array_map(function ($item) {
+            return "{$item}_wo_feedback";
+        }, $modelValues);
+        $modelValues = array_merge($modelValues, $modelValuesWoFeedback);
+        $this->statsAnalyzers = $modelValues;
         parent::__construct();
     }
 
@@ -88,7 +87,6 @@ class SampleAnalysisResultsExportCommand extends Command
             $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, 'wo_feedback') !== false);
         }
 
-        $this->statsAnalyzers = array_merge($this->statsAnalyzers, ['psalm', 'snyk', 'phan']);
         $this->statsAnalyzers = array_values($this->statsAnalyzers);
 
         if ($onlyKeepTheseAnalyzers) {
@@ -118,7 +116,7 @@ class SampleAnalysisResultsExportCommand extends Command
 
     private function generateResultsTotalCsv(array $statistics, $metrics): void
     {
-        if($metrics){
+        if ($metrics) {
             $metrics = explode(',', $metrics);
         } else {
             $metrics = ['recall', 'specificity', 'f1'];
@@ -136,5 +134,32 @@ class SampleAnalysisResultsExportCommand extends Command
             }
             file_put_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv', implode(';', $row).PHP_EOL, FILE_APPEND);
         }
+
+        // nicer column names
+        $searchReplace = [
+            'truePositives' => 'TP',
+            'trueNegatives' => 'TN',
+            'falsePositives' => 'FP',
+            'falseNegatives' => 'FN',
+            'analyzer' => 'Tool',
+            'recall' => 'Recall',
+            'specificity' => 'Spezifität',
+            'f1' => 'F1-Score',
+            'psalm' => 'Psalm',
+            'phan' => 'Phan',
+            'snyk' => 'Snyk',
+            'llama-32-8b' => 'Llama 3.2 8b',
+            'gpt-3.5-turbo' => 'GPT 3.5 Turbo',
+            'gpt-4o' => 'GPT 4o',
+            'gpt-4o-mini' => 'GPT 4 mini',
+            'time' => 'Zeit',
+            'costs' => 'Kosten (in USD)',
+            '(randomized)_wo_feedback' => 'OS',
+            '(randomized)' => '',
+            '"' => '',
+        ];
+        $csv = file_get_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv');
+        $csv = str_replace(array_keys($searchReplace), array_values($searchReplace), $csv);
+        file_put_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv', $csv);
     }
 }

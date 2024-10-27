@@ -114,6 +114,30 @@ class GptResultRepository extends ServiceEntityRepository
         return $time;
     }
 
+    public function getPromptTokenSum($issue, $model = 'gpt-3.5-turbo%-0613'): int
+    {
+        $gptResult = $this->findLastGptResultByIssue($issue, $model);
+        $tokens = 0;
+        while ($gptResult) {
+            $tokens += $gptResult->getPromptTokens();
+            $gptResult = $this->findLastGptResultByParentGptResult($gptResult);
+        }
+
+        return $tokens;
+    }
+
+    public function getCompletionTokenSum($issue, $model = 'gpt-3.5-turbo%-0613'): int
+    {
+        $gptResult = $this->findLastGptResultByIssue($issue, $model);
+        $tokens = 0;
+        while ($gptResult) {
+            $tokens += $gptResult->getCompletionTokens();
+            $gptResult = $this->findLastGptResultByParentGptResult($gptResult);
+        }
+
+        return $tokens;
+    }
+
     //    /**
     //     * @return GptResult[] Returns an array of GptResult objects
     //     */

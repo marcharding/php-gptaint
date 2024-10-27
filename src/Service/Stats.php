@@ -62,6 +62,8 @@ class Stats
                         'falsePositives' => 0,
                         'falseNegatives' => 0,
                         'time' => 0,
+                        'promptTokens' => 0,
+                        'completionTokens' => 0,
                     ];
                 }
 
@@ -89,23 +91,30 @@ class Stats
                                     'falsePositives' => 0,
                                     'falseNegatives' => 0,
                                     'time' => 0,
+                                    'promptTokens' => 0,
+                                    'completionTokens' => 0,
                                 ];
                             }
                             $statistics[$analyzerWithoutFeedback] = $this->getConfusionTable($statistics[$analyzerWithoutFeedback], $issue->getConfirmedState(), $gptResultWithoutFeedback->isExploitExampleSuccessful());
-                            $statistics[$analyzerWithoutFeedback]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer); // Assuming same method for time sum
+                            $statistics[$analyzerWithoutFeedback]['time'] += $gptResultWithoutFeedback->getTime();
+                            $statistics[$analyzerWithoutFeedback]['promptTokens'] += $gptResultWithoutFeedback->getPromptTokens();
+                            $statistics[$analyzerWithoutFeedback]['completionTokens'] += $gptResultWithoutFeedback->getCompletionTokens();
                         }
 
                         $statistics[$analyzer]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer);
+                        $statistics[$analyzer]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer);
+                        $statistics[$analyzer]['promptTokens'] += $gptResultRepository->getPromptTokenSum($issue, $analyzer);
+                        $statistics[$analyzer]['completionTokens'] += $gptResultRepository->getCompletionTokenSum($issue, $analyzer);
 
                         break;
                 }
 
-                $statisticsOverTime["{$analyzer}"][] = $this->calculateStatistics($statistics[$analyzer]);
+                $statisticsOverTime["{$analyzer}"][] = $this->calculateStatistics($statistics[$analyzer], $analyzer);
             }
         }
 
         foreach ($statistics as $analyzer => $statistic) {
-            $statistics[$analyzer] = $this->calculateStatistics($statistic);
+            $statistics[$analyzer] = $this->calculateStatistics($statistic, $analyzer);
             // remove static analyzer which were not run
             if ($statistics[$analyzer]['time'] === 0) {
                 unset($statistics[$analyzer]);
@@ -115,7 +124,7 @@ class Stats
         return ['statistics' => $statistics, 'statisticsOverTime' => $statisticsOverTime];
     }
 
-    public function calculateStatistics($results)
+    public function calculateStatistics($results, $analyzer): array
     {
         $count = $results['truePositives'] + $results['trueNegatives'] + $results['falsePositives'] + $results['falseNegatives'];
         $results['sum'] = $count;
@@ -128,7 +137,21 @@ class Stats
         $results['gscore'] = ($results['recall'] + 1 - $results['far']) == 0 ? 0 : (2 * $results['recall'] * (1 - $results['far'])) / ($results['recall'] + 1 - $results['far']);
         $results['f1'] = ($results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) != 0 ? 2 * $results['truePositives'] / (2 * $results['truePositives'] + $results['falsePositives'] + $results['falseNegatives']) : 0;
 
+        // TODO: make not hardcoded
+        $costs = match (true) {
+            str_contains($analyzer, 'gpt-4o-mini') => ['promptCost' => 0.150, 'completionCost' => 0.600],
+            str_contains($analyzer, 'gpt-4o') => ['promptCost' => 2.50, 'completionCost' => 10.00],
+            str_contains($analyzer, 'gpt-3.5') => ['promptCost' => 0.50, 'completionCost' => 1.50],
+            default => ['promptCost' => 0, 'completionCost' => 1],
+        };
+        $results['costs'] = ($results['promptTokens'] / 1000000 * $costs['promptCost']) + ($results['completionTokens'] / 1000000 * $costs['completionCost']);
+
         $results = array_map(function ($result) { return round($result, 2); }, $results);
+
+        $results['time'] = $results['time'] / 1000;
+        $totalMinutes = floor($results['time'] / 60);
+        $remainingSeconds = $results['time'] % 60;
+        $results['time'] = "{$totalMinutes}m {$remainingSeconds}s";
 
         return $results;
     }
