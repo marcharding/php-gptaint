@@ -117,14 +117,13 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
         foreach ($statisticsOverTime as $issue => $results) {
             $row = [];
 
-
             foreach ($results['analyzers'] as $analyzer => $analyzerResults) {
                 if (!in_array($analyzer, $this->statsAnalyzers)) {
                     continue;
                 }
 
                 $result = array_search(1, $analyzerResults, true);
-                $row[] = "$result (".($analyzerResults['triesCount'] ?? 1).')';
+                $row[] = "$result (".($analyzerResults['triesCount'] ?? 1).'/'.$analyzerResults['differentExploits'].')';
             }
             ksort($row);
             array_unshift($row, $issue);

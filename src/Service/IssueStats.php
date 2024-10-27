@@ -38,6 +38,7 @@ class IssueStats
                 'analyzers' => [],
             ];
 
+            // one shot
             foreach ($analyzers as $analyzer) {
                 $analyzerStats = [
                     'TP' => 0,
@@ -45,6 +46,7 @@ class IssueStats
                     'FP' => 0,
                     'FN' => 0,
                     'triesCount' => 0,
+                    'differentExploits' => 0,
                 ];
 
                 $gptResult = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, $analyzer);
@@ -55,10 +57,33 @@ class IssueStats
                         $gptResult->getResultState()
                     );
                     $analyzerStats['triesCount'] = $gptResult->getParentCount();
+                    $differentExploits = $this->entityManager->getConnection()
+                        ->executeQuery("
+SELECT analysis_result.exploit_example
+FROM analysis_result
+LEFT JOIN sample ON analysis_result.issue_id = sample.id
+WHERE analyzer = '{$analyzer}'
+AND analysis_result.issue_id = {$gptResult->getIssue()->getId()}
+")->fetchFirstColumn();
+                    $differentExploits = array_unique($differentExploits);
+
+                    $analyzerStats['differentExploits'] = count($differentExploits);
                     $issueStatistics['analyzers'][$analyzer] = $analyzerStats;
                 } else {
                     $issueStatistics['analyzers'][$analyzer] = $analyzerStatsDummy;
                 }
+            }
+
+            // with feedback
+            foreach ($analyzers as $analyzer) {
+                $analyzerStats = [
+                    'TP' => 0,
+                    'TN' => 0,
+                    'FP' => 0,
+                    'FN' => 0,
+                    'triesCount' => 0,
+                    'differentExploits' => 0,
+                ];
 
                 $gptResultWithoutFeedback = $gptResultRepository->findLastGptResultByIssue($issue, $analyzer);
                 if ($gptResultWithoutFeedback) {
@@ -68,13 +93,10 @@ class IssueStats
                         $issue->getConfirmedState(),
                         $gptResult->getResultState()
                     );
-                    $analyzerStats['triesCount'] = 0;
                     $issueStatistics['analyzers'][$analyzerWithoutFeedback] = $analyzerStats;
                 } else {
                     $issueStatistics['analyzers'][$analyzer] = $analyzerStatsDummy;
-
                 }
-
             }
 
             $statistics[$issue->getName()] = $issueStatistics;

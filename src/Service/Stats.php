@@ -19,7 +19,6 @@ class Stats
         $modelValues = $this->entityManager->getConnection()
             ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result')
             ->fetchAllAssociative();
-
         $gptResultRepository = $this->entityManager->getRepository(AnalysisResult::class);
         $analyzers = array_column($modelValues, 'analyzer');
 
