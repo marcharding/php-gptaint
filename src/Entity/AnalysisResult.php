@@ -132,7 +132,6 @@ class AnalysisResult
     public function getExploitExample(): ?string
     {
         return $this->exploitExample;
-
     }
 
     public function setExploitExample(?string $exploitExample): void
@@ -278,10 +277,15 @@ class AnalysisResult
     {
         $i = 0;
         $self = $this;
-        while($self->getParentResult() !== null){
+        do {
             $i++;
-            $self = $self->getParentResult();
-        }
+            if($self->getParentResult()){
+                $self = $self->getParentResult();
+            } else {
+                $self = null;
+            }
+        } while ($self);
+
         return $i;
     }
 }
