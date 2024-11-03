@@ -80,8 +80,8 @@ SELECT
         CASE 
         WHEN ar.result_state = 1 AND s.confirmed_state = 1 THEN 'TP' 
         WHEN ar.result_state = 0 AND s.confirmed_state = 0 THEN 'TN' 
-        WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FP' 
-        WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FN' 
+        WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FN' 
+        WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FP' 
     END AS condition_result 
 FROM 
     analysis_result ar 
@@ -124,8 +124,8 @@ SELECT
     CASE
         WHEN ar.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
         WHEN ar.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-        WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-        WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
+        WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+        WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
         END AS condition_result
 FROM
     analysis_result ar
@@ -163,29 +163,29 @@ SELECT
     CASE
         WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
         WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-        WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-        WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
+        WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+        WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
         END AS condition_result_analyzer1,
     CASE
         WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
         WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-        WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-        WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
+        WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+        WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
         END AS condition_result_analyzer2,
     CASE
         WHEN
             CASE
                 WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
                 WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-                WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-                WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
+                WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
                 END
                 <>
             CASE
                 WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
                 WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-                WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-                WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
+                WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
                 END
             THEN 'Different'
         ELSE 'Same'
@@ -218,8 +218,15 @@ GROUP BY
 
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
-SET @analyzer_one = 'gpt-4o-mini (randomized) / run 1'; 
+
+SET @analyzer_one = 'llama-32-8b (randomized) / run 2';
+SET @analyzer_two = 'llama-32-8b (randomized)';
+SET @analyzer_one = 'gpt-4o-mini (randomized) / run 2';
 SET @analyzer_two = 'gpt-4o-mini (randomized)';
+SET @analyzer_one = 'gpt-4o (randomized) / run 2';
+SET @analyzer_two = 'gpt-4o (randomized)';
+SET @analyzer_one = 'gpt-3.5-turbo (randomized) / run 2';
+SET @analyzer_two = 'gpt-3.5-turbo (randomized)';
 
 WITH analyzer_results AS (
     SELECT
@@ -229,33 +236,207 @@ WITH analyzer_results AS (
         CASE
             WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
             WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-            WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-            WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
-        END AS condition_result_analyzer1,
+            WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+            WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+            END AS condition_result_analyzer1,
         CASE
             WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
             WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-            WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-            WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
-        END AS condition_result_analyzer2,
+            WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+            WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+            END AS condition_result_analyzer2,
         CASE
             WHEN
                 CASE
                     WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
                     WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-                    WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-                    WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
-                END
-                <>
+                    WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                    WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+                    END
+                    <>
                 CASE
                     WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
                     WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
-                    WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FP'
-                    WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FN'
-                END
-            THEN 'Different'
+                    WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                    WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+                    END
+                THEN 'Different'
             ELSE 'Same'
-        END AS result_difference
+            END AS result_difference
+    FROM
+        (SELECT issue_id, MAX(id) AS max_id
+         FROM analysis_result
+         WHERE analyzer = @analyzer_one
+         GROUP BY issue_id) AS max_results1
+            JOIN
+        analysis_result ar1
+        ON max_results1.max_id = ar1.id
+            JOIN
+        (SELECT issue_id, MAX(id) AS max_id
+         FROM analysis_result
+         WHERE analyzer = @analyzer_two
+         GROUP BY issue_id) AS max_results2
+        ON max_results1.issue_id = max_results2.issue_id
+            JOIN
+        analysis_result ar2
+        ON max_results2.max_id = ar2.id
+            LEFT JOIN
+        sample s
+        ON ar1.issue_id = s.id
+)
+
+SELECT
+    condition_result_analyzer1,
+    condition_result_analyzer2,
+    COUNT(*) AS count
+FROM
+    analyzer_results
+GROUP BY
+    condition_result_analyzer1,
+    condition_result_analyzer2;
+
+-- SELECT
+--     COUNT(*) AS count
+-- FROM
+--     analyzer_results
+-- WHERE
+--     result_difference = 'Different';
+
+```
+
+# Differences between two analyzer runs (manual process), detailed result per issue, export CSV
+
+```sql
+SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+
+SET @analyzer_one = 'llama-32-8b (randomized) / run 2';
+SET @analyzer_two = 'llama-32-8b (randomized)';
+SET @analyzer_one = 'gpt-4o-mini (randomized) / run 2';
+SET @analyzer_two = 'gpt-4o-mini (randomized)';
+SET @analyzer_one = 'gpt-4o (randomized) / run 2';
+SET @analyzer_two = 'gpt-4o (randomized)';
+SET @analyzer_one = 'gpt-3.5-turbo (randomized) / run 2';
+SET @analyzer_two = 'gpt-3.5-turbo (randomized)';
+         
+WITH analyzer_results AS (
+    SELECT
+        s.name,
+        @analyzer_one AS analyzer1,
+        @analyzer_two AS analyzer2,
+        CASE
+            WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+            WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+            WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+            WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+            END AS condition_result_analyzer1,
+        CASE
+            WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+            WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+            WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+            WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+            END AS condition_result_analyzer2,
+        CASE
+            WHEN
+                CASE
+                    WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+                    WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+                    WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                    WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+                    END
+                    <>
+                CASE
+                    WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+                    WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+                    WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                    WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+                    END
+                THEN 'Different'
+            ELSE 'Same'
+            END AS result_difference
+    FROM
+        (SELECT issue_id, MAX(id) AS max_id
+        FROM analysis_result
+        WHERE analyzer = @analyzer_one
+        GROUP BY issue_id) AS max_results1
+    JOIN
+        analysis_result ar1
+    ON max_results1.max_id = ar1.id
+    JOIN
+        (SELECT issue_id, MAX(id) AS max_id
+        FROM analysis_result
+        WHERE analyzer = @analyzer_two
+        GROUP BY issue_id) AS max_results2
+    ON max_results1.issue_id = max_results2.issue_id
+    JOIN
+        analysis_result ar2
+    ON max_results2.max_id = ar2.id
+    LEFT JOIN
+        sample s
+    ON ar1.issue_id = s.id
+)
+
+SELECT name, condition_result_analyzer1, condition_result_analyzer2
+INTO OUTFILE '/var/lib/mysql-files/ANALYZER.csv'
+     FIELDS TERMINATED BY ';'
+     ENCLOSED BY '"'
+     LINES TERMINATED BY '\n'
+FROM
+    analyzer_results
+WHERE
+    result_difference = 'Different';
+
+
+```
+
+# Differences between two analyzer runs (manual process), grouped by category (tp, tn, fp, fn)
+
+```sql
+SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+
+SET @analyzer_one = 'llama-32-8b (randomized) / run 2';
+SET @analyzer_two = 'llama-32-8b (randomized)';
+SET @analyzer_one = 'gpt-4o-mini (randomized) / run 2';
+SET @analyzer_two = 'gpt-4o-mini (randomized)';
+SET @analyzer_one = 'gpt-4o (randomized) / run 2';
+SET @analyzer_two = 'gpt-4o (randomized)';
+SET @analyzer_one = 'gpt-3.5-turbo (randomized) / run 2';
+SET @analyzer_two = 'gpt-3.5-turbo (randomized)';
+         
+WITH analyzer_results AS (
+    SELECT
+        s.name,
+        @analyzer_one AS analyzer1,
+        @analyzer_two AS analyzer2,
+        CASE
+            WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+            WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+            WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+            WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+            END AS condition_result_analyzer1,
+        CASE
+            WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+            WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+            WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+            WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+            END AS condition_result_analyzer2,
+        CASE
+            WHEN
+                CASE
+                    WHEN ar1.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+                    WHEN ar1.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+                    WHEN ar1.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                    WHEN ar1.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+                    END
+                    <>
+                CASE
+                    WHEN ar2.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+                    WHEN ar2.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+                    WHEN ar2.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+                    WHEN ar2.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+                    END
+                THEN 'Different'
+            ELSE 'Same'
+            END AS result_difference
     FROM
         (SELECT issue_id, MAX(id) AS max_id
         FROM analysis_result
@@ -282,6 +463,10 @@ SELECT
     condition_result_analyzer1,
     condition_result_analyzer2,
     COUNT(*) AS count
+INTO OUTFILE '/var/lib/mysql-files/ANALYZER.csv'
+    FIELDS TERMINATED BY ';'
+    ENCLOSED BY '"'
+    LINES TERMINATED BY '\n'
 FROM
     analyzer_results
 GROUP BY
