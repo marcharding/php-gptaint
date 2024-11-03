@@ -101,6 +101,7 @@
                                 {% else %}
                                         <span class="bg-green-500 rounded px-1 inline-block">Good</span>
                                     {% endif %}
+                                    <span class="opacity-50 rounded px-1 inline-block">({{ (gptResults|first).parentCount }}/{{ (gptResults|first).exploitCount }})</span>
                              </span>
                                 <svg x-show="openAccordion !== {{ loop.index }}" xmlns="http://www.w3.org/2000/svg"
                                      class="h-5 w-5 transform transition-transform" viewBox="0 0 20 20"

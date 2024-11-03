@@ -288,4 +288,21 @@ class AnalysisResult
 
         return $i;
     }
+
+    public function getExploitCount(): int
+    {
+        $exploits =[];
+        $self = $this;
+        do {
+            $exploits[] = $self->getExploitExample();
+            if($self->getParentResult()){
+                $self = $self->getParentResult();
+            } else {
+                $self = null;
+            }
+        } while ($self);
+        $exploits = array_unique($exploits);
+        $exploits = array_filter($exploits);
+        return count($exploits);
+    }
 }
