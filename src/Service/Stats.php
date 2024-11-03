@@ -16,112 +16,182 @@ class Stats
 
     public function getStatistics(array $issues): array
     {
-        $modelValues = $this->entityManager->getConnection()
-            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result')
-            ->fetchAllAssociative();
-        $gptResultRepository = $this->entityManager->getRepository(AnalysisResult::class);
-        $analyzers = array_column($modelValues, 'analyzer');
+        // Get all analyzers in one query
+        $analyzers = $this->entityManager->getConnection()
+            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result ORDER BY analyzer DESC')
+            ->fetchFirstColumn();
 
-        $statistics = [];
+        // Initialize statistics arrays
+        $statistics = $this->initializeStatistics($analyzers);
         $statisticsOverTime = [];
 
-        if (false) {
-            foreach ($issues as $issue) {
-                // TODO: Extract to extra command, currently disabled
-
-                $tests = $gptResultRepository->findAllFeedbackGptResultByIssue($issue, 'gpt-3.5-turbo-0125');
-
-                $tmp = [];
-                $tmp[$issue->getName()]['state'] = $issue->getConfirmedState();
-                $tmp[$issue->getName()]['isExploitExampleSuccessful'] = [];
-                $tmp[$issue->getName()]['gptResult'] = [];
-
-                foreach ($tests as $item) {
-                    $tmp[$issue->getName()]['isExploitExampleSuccessful'][] = $item->isExploitExampleSuccessful();
-                    $tmp[$issue->getName()]['gptResult'][] = $item;
-                }
-
-                // TODO: Refactor. This check if the results were consistent between multiple runs
-                foreach ($tmp as $item) {
-                    if (count(array_unique($item['isExploitExampleSuccessful'])) !== 1) {
-                        // dump($issue->getName());
-                        foreach ($item['gptResult'] as $gptResult) {
-                            // dump($item['isExploitExampleSuccessful']);
-                        }
-                    }
-                }
-            }
-        }
+        // Fetch all relevant analysis results in bulk
+        $allResults = $this->fetchAllAnalysisResults($issues);
 
         foreach ($issues as $issue) {
+            $issueId = $issue->getId();
+            $confirmedState = $issue->getConfirmedState();
+
             foreach ($analyzers as $analyzer) {
-                if (!isset($statistics[$analyzer])) {
-                    $statistics[$analyzer] = [
-                        'truePositives' => 0,
-                        'trueNegatives' => 0,
-                        'falsePositives' => 0,
-                        'falseNegatives' => 0,
-                        'time' => 0,
-                        'promptTokens' => 0,
-                        'completionTokens' => 0,
-                    ];
+                $results = $allResults[$issueId][$analyzer] ?? [];
+
+                if (empty($results)) {
+                    continue;
                 }
 
-                switch ($analyzer) {
-                    case 'psalm':
-                    case 'snyk':
-                    case 'phan':
-                        $gptResultWithoutFeedback = $gptResultRepository->findLastGptResultByIssue($issue, $analyzer);
-                        $statistics[$analyzer] = $this->getConfusionTable($statistics[$analyzer], $issue->getConfirmedState(), $gptResultWithoutFeedback->getResultState());
-                        $statistics[$analyzer]['time'] += $gptResultWithoutFeedback->getTime();
-                        break;
-                    default:
-                        $gptResult = $gptResultRepository->findLastFeedbackGptResultByIssue($issue, $analyzer);
-                        if ($gptResult) {
-                            $statistics[$analyzer] = $this->getConfusionTable($statistics[$analyzer], $issue->getConfirmedState(), $gptResult->isExploitExampleSuccessful());
-                        }
-
-                        $gptResultWithoutFeedback = $gptResultRepository->findLastGptResultByIssue($issue, $analyzer);
-                        if ($gptResultWithoutFeedback) {
-                            $analyzerWithoutFeedback = "{$analyzer}_wo_feedback";
-                            if (!isset($statistics[$analyzerWithoutFeedback])) {
-                                $statistics[$analyzerWithoutFeedback] = [
-                                    'truePositives' => 0,
-                                    'trueNegatives' => 0,
-                                    'falsePositives' => 0,
-                                    'falseNegatives' => 0,
-                                    'time' => 0,
-                                    'promptTokens' => 0,
-                                    'completionTokens' => 0,
-                                ];
-                            }
-                            $statistics[$analyzerWithoutFeedback] = $this->getConfusionTable($statistics[$analyzerWithoutFeedback], $issue->getConfirmedState(), $gptResultWithoutFeedback->isExploitExampleSuccessful());
-                            $statistics[$analyzerWithoutFeedback]['time'] += $gptResultWithoutFeedback->getTime();
-                            $statistics[$analyzerWithoutFeedback]['promptTokens'] += $gptResultWithoutFeedback->getPromptTokens();
-                            $statistics[$analyzerWithoutFeedback]['completionTokens'] += $gptResultWithoutFeedback->getCompletionTokens();
-                        }
-
-                        $statistics[$analyzer]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer);
-                        $statistics[$analyzer]['time'] += $gptResultRepository->getTimeSum($issue, $analyzer);
-                        $statistics[$analyzer]['promptTokens'] += $gptResultRepository->getPromptTokenSum($issue, $analyzer);
-                        $statistics[$analyzer]['completionTokens'] += $gptResultRepository->getCompletionTokenSum($issue, $analyzer);
-
-                        break;
-                }
+                $this->processAnalyzerResults(
+                    $statistics,
+                    $analyzer,
+                    $confirmedState,
+                    $results
+                );
 
                 $statisticsOverTime["{$analyzer}"][] = $this->calculateStatistics($statistics[$analyzer], $analyzer);
             }
         }
 
+        // Clean up and finalize statistics
+        $statistics = $this->finalizeStatistics($statistics);
+
+        return [
+            'statistics' => $statistics,
+            'statisticsOverTime' => $statisticsOverTime
+        ];
+    }
+
+    private function fetchAllAnalysisResults(array $issues): array
+    {
+        $issueIds = array_map(fn($issue) => $issue->getId(), $issues);
+
+        $qb = $this->entityManager->createQueryBuilder();
+        $results = $qb->select('ar')
+            ->from(AnalysisResult::class, 'ar')
+            ->where($qb->expr()->in('ar.issue', ':issueIds'))
+            ->orderBy('ar.id', 'DESC')  // Ensure results are ordered by creation date
+            ->setParameter('issueIds', $issueIds)
+            ->getQuery()
+            ->getResult();
+
+        // Organize results by issue and analyzer
+        $organized = [];
+        foreach ($results as $result) {
+            $issueId = $result->getIssue()->getId();
+            $analyzer = $result->getAnalyzer();
+            $organized[$issueId][$analyzer][] = $result;
+        }
+
+        return $organized;
+    }
+
+    private function initializeStatistics(array $analyzers): array
+    {
+        $statistics = [];
+        foreach ($analyzers as $analyzer) {
+            $statistics[$analyzer] = [
+                'truePositives' => 0,
+                'trueNegatives' => 0,
+                'falsePositives' => 0,
+                'falseNegatives' => 0,
+                'time' => 0,
+                'promptTokens' => 0,
+                'completionTokens' => 0,
+            ];
+
+            // Initialize without feedback version
+            if (!in_array($analyzer, ['psalm', 'snyk', 'phan'])) {
+                $statistics["{$analyzer}_wo_feedback"] = $statistics[$analyzer];
+            }
+        }
+        return $statistics;
+    }
+
+    private function processAnalyzerResults(array &$statistics, string $analyzer, int $confirmedState, array $results): void
+    {
+        $lastResult = $this->findFirstFeedbackResult($results); // Get the most recent result (assuming ordered by createdAt DESC)
+
+        if (in_array($analyzer, ['psalm', 'snyk', 'phan'])) {
+            $statistics[$analyzer] = $this->getConfusionTable(
+                $statistics[$analyzer],
+                $confirmedState,
+                $lastResult->getResultState()
+            );
+            $statistics[$analyzer]['time'] += $lastResult->getTime();
+        } else {
+            // Process GPT results
+            $this->processGptResults($statistics, $analyzer, $confirmedState, $results);
+        }
+    }
+
+    private function processGptResults(array &$statistics, string $analyzer, int $confirmedState, array $results): void
+    {
+        $lastResult = $this->findFirstFeedbackResult($results);
+        $lastFeedbackResult = $this->findLastFeedbackResult($results);
+
+        if ($lastFeedbackResult) {
+            $statistics[$analyzer] = $this->getConfusionTable(
+                $statistics[$analyzer],
+                $confirmedState,
+                $lastFeedbackResult->isExploitExampleSuccessful()
+            );
+        }
+
+        // Process without feedback statistics
+        $woFeedbackKey = "{$analyzer}_wo_feedback";
+        if ($lastResult) {
+            $statistics[$woFeedbackKey] = $this->getConfusionTable(
+                $statistics[$woFeedbackKey],
+                $confirmedState,
+                $lastResult->isExploitExampleSuccessful()
+            );
+
+            // Accumulate metrics
+            $this->accumulateMetrics($statistics[$woFeedbackKey], $lastResult);
+        }
+
+        // Accumulate total metrics
+        foreach ($results as $result) {
+            $this->accumulateMetrics($statistics[$analyzer], $result);
+        }
+    }
+
+    private function accumulateMetrics(array &$statistics, $result): void
+    {
+        $statistics['time'] += $result->getTime();
+        $statistics['promptTokens'] += $result->getPromptTokens();
+        $statistics['completionTokens'] += $result->getCompletionTokens();
+    }
+
+    private function findLastFeedbackResult(array $results)
+    {
+        foreach ($results as $result) {
+            // Assuming feedback results are identified by having exploit example results
+            if ($result->isExploitExampleSuccessful() !== null) {
+                return $result;
+            }
+        }
+        return null;
+    }
+
+    private function findFirstFeedbackResult(array $results)
+    {
+        foreach ($results as $result) {
+            // Assuming feedback results are identified by having exploit example results
+            if ($result->getParentResult() === null) {
+                return $result;
+            }
+        }
+        return null;
+    }
+
+    private function finalizeStatistics(array $statistics): array
+    {
         foreach ($statistics as $analyzer => $statistic) {
             $statistics[$analyzer] = $this->calculateStatistics($statistic, $analyzer);
-            // remove static analyzer which were not run
-            if ($statistics[$analyzer]['time'] === 0) {
+            if (!isset($statistics[$analyzer]['time']) || $statistics[$analyzer]['time'] === 0) {
                 unset($statistics[$analyzer]);
             }
         }
-
-        return ['statistics' => $statistics, 'statisticsOverTime' => $statisticsOverTime];
+        return $statistics;
     }
 
     public function calculateStatistics($results, $analyzer): array
@@ -150,7 +220,7 @@ class Stats
 
         $results['time'] = $results['time'] / 1000;
         $totalMinutes = floor($results['time'] / 60);
-        $remainingSeconds = $results['time'] % 60;
+        $remainingSeconds = round($results['time']) % 60;
         $results['time'] = "{$totalMinutes}m {$remainingSeconds}s";
 
         return $results;
