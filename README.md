@@ -99,7 +99,7 @@ docker compose exec webserver_app php bin/console app:sample:analyze:llm --model
 ### Run Tests for the Specific LLM
 
 ```bash
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-3-8b --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-32-8b --randomized
 ```
 
 ### Helper Commands:
@@ -125,9 +125,7 @@ docker compose exec webserver_app php bin/console app:analysis:results:export:cs
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --no-feedback
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,llama-3-8b (randomized),llama-3-8b (randomized)_wo_feedback,phan,psalm,snyk"
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm" --metrics="recall,specificity,f1"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="psalm,snyk,phan,gpt-3.5-turbo (randomized),gpt-3.5-turbo (randomized)_wo_feedback,llama-32-8b (randomized),llama-32-8b (randomized)_wo_feedback,gpt-4o-mini (randomized),gpt-4o-mini (randomized)_wo_feedback,gpt-4o (randomized),gpt-4o (randomized)_wo_feedback"  --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1,far,costs,time"
 ```
 
 To export detailed results per issue:
@@ -144,5 +142,5 @@ docker compose exec webserver_app php bin/console app:analysis:results:per:issue
 docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,llama-3-8b (randomized),llama-3-8b (randomized)_wo_feedback,phan,psalm,snyk"
 docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
 docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="psalm,snyk,phan,gpt-3.5-turbo (randomized),gpt-3.5-turbo (randomized)_wo_feedback,llama-32-8b (randomized),llama-32-8b (randomized)_wo_feedback,gpt-4o-mini (randomized),gpt-4o-mini (randomized)_wo_feedback,gpt-4o (randomized),gpt-4o (randomized)_wo_feedback"
 ```
