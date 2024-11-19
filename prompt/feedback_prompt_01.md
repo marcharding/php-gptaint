@@ -1,4 +1,3 @@
-            $prompt = <<<EOT
 Your example exploit, which you can find at the end of this message after "# Executed example exploit:" was executed against a research sandbox with the response of the sandbox at the end of this message after "# Response of sandbox:".
 
 Adjust and improve or confirm example exploit based on the response if sandbox.
@@ -34,4 +33,3 @@ JSON: {
 
 # Response of sandbox:
 $sandboxResult;
-EOT;
