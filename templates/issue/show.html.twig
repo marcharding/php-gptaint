@@ -89,7 +89,7 @@
             </div>
             <div class="mt-6 border-t border-gray-100">
 
-                <div x-data="{ openAccordion: null }" class="space-y-4">
+                <div x-data="{ openAccordion: null, openParentResults: null }" class="space-y-4">
                     {% for analyzer, gptResults in resultsByAnalyzer %}
                         <div class="analyzer-group border border-gray-300 rounded-lg overflow-hidden shadow-sm">
                             <h3 class="analyzer-title cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-3 flex justify-between items-center"
@@ -119,7 +119,9 @@
                                 </svg>
                             </h3>
                             <div x-show="openAccordion === {{ loop.index }}" x-cloak class="bg-white p-6 pt-0 space-y-4">
+
                                 {% for gptResult in gptResults %}
+
                                     <div class="py-4 border-t border-gray-200">
                                         <div class="text-sm">
                                             {% if gptResult.exploitExample %}
@@ -145,13 +147,66 @@
                                                 </div>
                                             {% endif %}
                                         </div>
-                                        {% if gptResult.prompt %}
-                                            <div class="mt-4 flex items-center text-sm space-x-4">
-                                                <a href="{{ path('app_prompt_show', {'id': gptResult.prompt.id}) }}"
-                                                   class="text-blue-600 hover:underline">show prompt</a>
-                                            </div>
-                                        {% endif %}
                                     </div>
+
+                                    {% if gptResult.parentResult is defined and gptResult.parentResult is not null %}
+                                        <div class="border border-gray-300 rounded-lg overflow-hidden shadow-sm mt-4">
+                                            <h4 class="cursor-pointer bg-gray-50 hover:bg-gray-100 px-4 py-3 flex justify-between items-center"
+                                                @click.prevent="openParentResults = openParentResults === '{{ loop.parent.loop.index }}_{{ loop.index }}' ? null : '{{ loop.parent.loop.index }}_{{ loop.index }}'">
+                                                <span class="text-sm font-medium">Show complete feedback tries</span>
+                                                <svg x-show="openParentResults !== '{{ loop.parent.loop.index }}_{{ loop.index }}'" xmlns="http://www.w3.org/2000/svg"
+                                                     class="h-5 w-5 transform transition-transform" viewBox="0 0 20 20"
+                                                     fill="currentColor">
+                                                    <path fill-rule="evenodd"
+                                                          d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z"
+                                                          clip-rule="evenodd"/>
+                                                </svg>
+                                                <svg x-show="openParentResults === '{{ loop.parent.loop.index }}_{{ loop.index }}'" xmlns="http://www.w3.org/2000/svg"
+                                                     class="h-5 w-5 transform rotate-180 transition-transform" viewBox="0 0 20 20"
+                                                     fill="currentColor">
+                                                    <path fill-rule="evenodd"
+                                                          d="M5.23 7.21a.75.75 0 011.06.04L10 11.587l3.71-4.333a.75.75 0 111.14.978l-4 4.667a.75.75 0 01-1.14 0l-4-4.667a.75.75 0 01.04-1.06z"
+                                                          clip-rule="evenodd"/>
+                                                </svg>
+                                            </h4>
+                                            <div x-show="openParentResults === '{{ loop.parent.loop.index }}_{{ loop.index }}'" x-cloak class="bg-white p-4">
+                                                {% macro print_parent_results(result, counter) %}
+                                                    {% if result is not null %}
+                                                        <div class="py-4 border-t border-gray-200 first:border-t-0">
+                                                            <div class="text-sm">
+                                                                <div class="font-bold mb-2 text-gray-500">Final result - {{ counter }}</div>
+                                                                {% if result.exploitExample %}
+                                                                    <div class="font-bold pt-2 col-span-5">
+                                                                        <span class="block pb-4">Exploit example:</span>
+                                                                        <div class="grid grid-cols-6 gap-4">
+                                                                            <pre class="bg-gray-100 col-span-5 p-2 rounded"><code class="font-normal text-xs pb-2 language-php">{{ result.exploitExample|nl2br }}</code></pre>
+                                                                        </div>
+                                                                    </div>
+                                                                {% endif %}
+                                                                {% if result.response %}
+                                                                    <div class="w-12/12">
+                                                                        <span class="block py-6 font-bold">LLM explaination:</span>
+                                                                        <pre class="bg-gray-100 p-2 rounded text-xs break-words whitespace-pre-wrap">{{ result.response|trim|nl2br }}</pre>
+                                                                    </div>
+                                                                {% else %}
+                                                                    <div class="w-12/12">
+                                                                        <pre class="bg-gray-100 p-2 rounded text-xs break-words whitespace-pre-wrap">{{ result.analysisResult|trim|nl2br }}</pre>
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        {% set counter = counter + 1 %}
+                                                    {% endif %}
+                                                    {% if result.parentResult is defined %}
+                                                        {{ _self.print_parent_results(result.parentResult, counter) }}
+                                                    {% endif %}
+                                                {% endmacro %}
+                                                {% set counter = 0 %}
+                                                {{ _self.print_parent_results(gptResult.parentResult, counter) }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
                                 {% endfor %}
                             </div>
                         </div>
