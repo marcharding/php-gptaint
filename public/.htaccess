@@ -1,3 +1,18 @@
+# Access restriction
+<IfDefine !DEVELOPMENT>
+    SetEnvIf Host ^php-gptaint\.localhost ALLOW_ACCESS
+    AuthType Basic
+    AuthUserFile /var/www/application/.htpasswd
+    AuthName "Protected"
+    Require valid-user
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from 192.0.0.0/24
+    Allow from env=ALLOW_ACCESS
+    Satisfy any
+</IfDefine>
+
 # Use the front controller as index file. It serves as a fallback solution when
 # every other rewrite/redirect fails (e.g. in an aliased environment without
 # mod_rewrite). Additionally, this reduces the matching process for the
