@@ -272,10 +272,11 @@ class SampleAnalyzeLlmCommand extends Command
 This prompt relates to your example exploitation from a prior request.
 The tested exploit is found at the end between the markers "### EXECUTED EXAMPLE EXPLOIT ###" und "### /EXECUTED EXAMPLE EXPLOIT ###" which was trialed on a research sandbox.
 The HTTP response from sandbox to the exploit is found between these markers "### SANDBOX RESPONSE ###" und "### /SANDBOX RESPONSE ###".
+If the sandbox did not return anything, the string '###> No Response from Sandbox <###' is inserted between the markers.
 
-Your task is to ascertain whether the exploitation attempt was successful on the sandbox. 
+Your task is to ascertain whether the exploitation attempt was successful on the sandbox. Analyse the response carefully and diligent.
 
-Remember that the sandbox only provides an HTML response. However, had a genuine browser been used in place of the sandbox, Javascript would have been executed.
+Remember that the sandbox only provides an HTML and/or Plaintext response. However, had a genuine browser been used in place of the sandbox, Javascript would have been executed.
 Therefore, consider this in your assessment of the exploit's success. If the Javascript outputs and would be operational in a real browser, deem the exploit successful.
 
 Proceed as per the outcomes. If successful, follow the instructions under "### CASE SUCCESSFUL EXPLOIT:"; otherwise, follow those under "### CASE UNSUCCESSFUL EXPLOIT:".
