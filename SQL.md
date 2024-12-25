@@ -473,3 +473,80 @@ GROUP BY
     condition_result_analyzer1,
     condition_result_analyzer2;
 ```
+
+# Export unique exploits per sample
+
+```sql
+WITH ExploitExamplesCount AS (
+    SELECT
+        issue_id,
+        analyzer,
+        COUNT(DISTINCT exploit_example) AS distinct_exploit_count
+    FROM
+        analysis_result
+    WHERE
+        exploit_example IS NOT NULL
+      AND exploit_example != ''  -- No empty exploits
+GROUP BY
+    issue_id,
+    analyzer
+    ),
+
+    ResultSummary AS (
+SELECT
+    ar.analyzer,
+    CASE
+    WHEN ar.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+    WHEN ar.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+    WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+    WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+    END AS result_type,
+    COUNT(DISTINCT ar.issue_id) AS issue_count,
+    COUNT(DISTINCT sub_ar.id) AS total_analysis_count,
+    COALESCE(ex_count.distinct_exploit_count, 0) AS unique_exploit_count,
+    GROUP_CONCAT(DISTINCT s.name SEPARATOR ', ') AS sample_names
+FROM
+    analysis_result ar
+    JOIN
+    (SELECT MAX(id) AS max_id, issue_id, analyzer
+    FROM analysis_result
+    GROUP BY issue_id, analyzer) AS max_results
+ON ar.id = max_results.max_id
+    LEFT JOIN
+    sample s ON ar.issue_id = s.id
+    LEFT JOIN
+    analysis_result sub_ar
+    ON ar.issue_id = sub_ar.issue_id
+    AND ar.analyzer = sub_ar.analyzer
+    LEFT JOIN
+    ExploitExamplesCount ex_count
+    ON ar.issue_id = ex_count.issue_id
+    AND ar.analyzer = ex_count.analyzer
+GROUP BY
+    ar.analyzer,
+    ar.result_state,
+    s.confirmed_state,
+    ar.issue_id,
+    ex_count.distinct_exploit_count
+    )
+
+SELECT
+    analyzer AS 'Analyzer',
+        result_type AS 'Ergebnistyp',
+        COUNT(*) AS 'Anzahl Ergebnisse',
+        SUM(total_analysis_count) AS 'Versuche inkl. Feedback',
+        SUM(unique_exploit_count) AS 'Eindeutige Exploits'
+INTO OUTFILE '/var/lib/mysql-files/foo.csv'
+  FIELDS TERMINATED BY ';' OPTIONALLY ENCLOSED BY '"'
+  LINES TERMINATED BY '\n'
+FROM
+    ResultSummary
+WHERE
+    result_type IS NOT NULL
+GROUP BY
+    analyzer,
+    result_type
+ORDER BY
+    analyzer,
+    result_type
+```
