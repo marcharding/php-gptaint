@@ -244,11 +244,16 @@ class SampleAnalyzeLlmCommand extends Command
             return false;
         }
 
-        $gptResult->setSandboxResponse(@iconv('UTF-8', 'UTF-8//IGNORE', $process->getOutput()));
+        $sandboxResult = @iconv('UTF-8', 'UTF-8//IGNORE', $process->getOutput());
+        $sandboxResult = trim($sandboxResult);
+        if(empty($sandboxResult)){
+            $sandboxResult = '###> No Response from Sandbox <###';
+        }
+        $gptResult->setSandboxResponse($sandboxResult);
         $this->entityManager->persist($gptResult);
         $this->entityManager->flush();
 
-        return $process->getOutput();
+        return $sandboxResult;
     }
 
     public function startFeedbackLoop($io, $issue, $gptResult, $messages = [])
