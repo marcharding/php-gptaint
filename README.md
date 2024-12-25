@@ -95,6 +95,13 @@ docker compose exec webserver_app php bin/console app:sample:analyze:llm --model
 ./llama-server --ctx-size 8192 -m models/Meta-Llama-3-8B-Instruct-Q6_K.gguf
 ./llama-server --ctx-size 4096 -m models/Phi-3-mini-4k-instruct-q4.gguf
 ```
+or just use the provided docker image
+
+```bash
+wget https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q6_K_L/Llama-3.3-70B-Instruct-Q6_K_L-00001-of-00002.gguf
+wget https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q6_K_L/Llama-3.3-70B-Instruct-Q6_K_L-00002-of-00002.gguf
+docker run -v /root/models:/models -p 8080:8080 ghcr.io/ggerganov/llama.cpp:server-cuda -m models/Llama-3.3-70B-Instruct-Q6_K_L-00001-of-00002.gguf --port 8080 --flash-attn --ctx-size 65536 --host 0.0.0.0 --n-gpu-layers 128
+```
 
 ### Run Tests for the Specific LLM
 
