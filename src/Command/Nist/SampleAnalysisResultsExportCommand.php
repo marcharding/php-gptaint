@@ -126,11 +126,7 @@ class SampleAnalysisResultsExportCommand extends Command
         foreach ($this->statsAnalyzers as $analyzer) {
             $row = [$analyzer];
             foreach ($metrics as $metric) {
-                if ($metric === 'far') {
-                    $row[] = 1 - $statistics[$analyzer][$metric];
-                } else {
-                    $row[] = $statistics[$analyzer][$metric];
-                }
+                $row[] = $statistics[$analyzer][$metric];
             }
             file_put_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv', implode(';', $row).PHP_EOL, FILE_APPEND);
         }
@@ -145,10 +141,12 @@ class SampleAnalysisResultsExportCommand extends Command
             'recall' => 'Recall',
             'specificity' => 'Spezifität',
             'f1' => 'F1-Score',
+            'far' => 'FAR',
             'psalm' => 'Psalm',
             'phan' => 'Phan',
             'snyk' => 'Snyk',
-            'llama-32-8b' => 'Llama 3.2 8b',
+            'llama3.3-70b' => 'Llama 3.3 70b',
+            'llama3.1-8b' => 'Llama 3.1 8b',
             'gpt-3.5-turbo' => 'GPT 3.5 Turbo',
             'gpt-4o' => 'GPT 4o',
             'gpt-4o-mini' => 'GPT 4 mini',
