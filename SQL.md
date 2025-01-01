@@ -219,14 +219,16 @@ GROUP BY
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
-SET @analyzer_one = 'llama-32-8b (randomized) / run 2';
-SET @analyzer_two = 'llama-32-8b (randomized)';
-SET @analyzer_one = 'gpt-4o-mini (randomized) / run 2';
-SET @analyzer_two = 'gpt-4o-mini (randomized)';
-SET @analyzer_one = 'gpt-4o (randomized) / run 2';
-SET @analyzer_two = 'gpt-4o (randomized)';
-SET @analyzer_one = 'gpt-3.5-turbo (randomized) / run 2';
-SET @analyzer_two = 'gpt-3.5-turbo (randomized)';
+SET @analyzer_one = 'llama3.3-70b (randomized)';
+SET @analyzer_two = 'llama3.3-70b (randomized) / run 2';
+SET @analyzer_one = 'llama3.1-8b (randomized)';
+SET @analyzer_two = 'llama3.1-8b (randomized) / run 2';
+SET @analyzer_one = 'gpt-4o-mini (randomized)';
+SET @analyzer_two = 'gpt-4o-mini (randomized) / run 2';
+SET @analyzer_one = 'gpt-4o (randomized)';
+SET @analyzer_two = 'gpt-4o (randomized) / run 2';
+SET @analyzer_one = 'gpt-3.5-turbo (randomized)';
+SET @analyzer_two = 'gpt-3.5-turbo (randomized) / run 2';
 
 WITH analyzer_results AS (
     SELECT
@@ -309,14 +311,16 @@ GROUP BY
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
-SET @analyzer_one = 'llama-32-8b (randomized) / run 2';
-SET @analyzer_two = 'llama-32-8b (randomized)';
-SET @analyzer_one = 'gpt-4o-mini (randomized) / run 2';
-SET @analyzer_two = 'gpt-4o-mini (randomized)';
-SET @analyzer_one = 'gpt-4o (randomized) / run 2';
-SET @analyzer_two = 'gpt-4o (randomized)';
-SET @analyzer_one = 'gpt-3.5-turbo (randomized) / run 2';
-SET @analyzer_two = 'gpt-3.5-turbo (randomized)';
+SET @analyzer_one = 'llama3.3-70b (randomized)';
+SET @analyzer_two = 'llama3.3-70b (randomized) / run 2';
+SET @analyzer_one = 'llama3.1-8b (randomized)';
+SET @analyzer_two = 'llama3.1-8b (randomized) / run 2';
+SET @analyzer_one = 'gpt-4o-mini (randomized)';
+SET @analyzer_two = 'gpt-4o-mini (randomized) / run 2';
+SET @analyzer_one = 'gpt-4o (randomized)';
+SET @analyzer_two = 'gpt-4o (randomized) / run 2';
+SET @analyzer_one = 'gpt-3.5-turbo (randomized)';
+SET @analyzer_two = 'gpt-3.5-turbo (randomized) / run 2';
          
 WITH analyzer_results AS (
     SELECT
@@ -384,8 +388,6 @@ FROM
     analyzer_results
 WHERE
     result_difference = 'Different';
-
-
 ```
 
 # Differences between two analyzer runs (manual process), grouped by category (tp, tn, fp, fn)
