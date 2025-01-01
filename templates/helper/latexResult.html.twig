@@ -36,7 +36,11 @@
 
 \subparagraph*{Rückgabe der Sandbox}
 \begin{minted}[fontsize=\scriptsize,breaklines,breaksymbolleft={}]{text}
+{% if analysisResult.sandboxResponse is empty %}
+###> No Response from Sandbox <###
+{% else %}
 {{ analysisResult.sandboxResponse|raw }}
+{% endif %}
 \end{minted}
 {% endif %}
 
