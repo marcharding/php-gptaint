@@ -199,7 +199,7 @@ class SampleAnalyzeLlmCommand extends Command
         // get source directory of sample
         $sourceDirectory = $this->projectDir.dirname(dirname($issue->getFilepath()));
 
-        // find sample files (named index.php or sample.php first, than any php file (legacy format with CWE_* names)
+        // find sample files (named index.php or sample.php first, then any php file (legacy format with CWE_* names)
         $finder = new Finder();
         $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php', 'CWE_*.php'])->getIterator();
         $sourceFiles->rewind();
@@ -273,6 +273,7 @@ This prompt relates to your example exploitation from a prior request.
 The tested exploit is found at the end between the markers "### EXECUTED EXAMPLE EXPLOIT ###" und "### /EXECUTED EXAMPLE EXPLOIT ###" which was trialed on a research sandbox.
 The HTTP response from sandbox to the exploit is found between these markers "### SANDBOX RESPONSE ###" und "### /SANDBOX RESPONSE ###".
 If the sandbox did not return anything, the string '###> No Response from Sandbox <###' is inserted between the markers.
+An empty result probably means the exploit did not succeed, but that does not imply that a not empty result does mean the exploit worked.
 
 Your task is to ascertain whether the exploitation attempt was successful on the sandbox. Analyse the response carefully and diligent.
 
