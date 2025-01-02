@@ -71,20 +71,20 @@ docker compose exec webserver_app php bin/console app:sample:analyze:static --an
 
 ```bash
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-3.5-turbo-0125
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-3.5-turbo-0125 --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-3.5-turbo-0125 --not-obfuscated
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4-0125-preview --not-obfuscated
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-turbo
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-turbo --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-turbo --not-obfuscated
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o --not-obfuscated
 ```
 
 Analyse a sample again by providing the id
 
 ```bash
 docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o 10
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o --randomized 10
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=gpt-4o --not-obfuscated 10
 ```
 
 ## Using Other LLMs with OpenAI Compatible APIs (e.g., LlamaCPP)
@@ -106,7 +106,7 @@ docker run -v /root/models:/models -p 8080:8080 ghcr.io/ggerganov/llama.cpp:serv
 ### Run Tests for the Specific LLM
 
 ```bash
-docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-32-8b --randomized
+docker compose exec webserver_app php bin/console app:sample:analyze:llm --model=llama.cpp/llama-32-8b --not-obfuscated
 ```
 
 ### Helper Commands:
@@ -122,32 +122,32 @@ To export results:
 
 ```bash
 docker compose exec webserver_app php bin/console app:sample:results:export:csv results.csv
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --not-obfuscated
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --feedback
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-feedback
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized --feedback
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --randomized --no-feedback
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --feedback
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-randomized --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --not-obfuscated --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --not-obfuscated --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --no-feedback
 docker compose exec webserver_app php bin/console app:analysis:results:export:csv --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1"
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,llama-3-8b (randomized),llama-3-8b (randomized)_wo_feedback,phan,psalm,snyk"
-docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="psalm,snyk,phan,gpt-3.5-turbo (randomized),gpt-3.5-turbo (randomized)_wo_feedback,llama-32-8b (randomized),llama-32-8b (randomized)_wo_feedback,gpt-4o-mini (randomized),gpt-4o-mini (randomized)_wo_feedback,gpt-4o (randomized),gpt-4o (randomized)_wo_feedback"  --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1,far,costs,time"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="gpt-4o,gpt-4o_os,llama-3-8b,llama-3-8b_os,phan,psalm,snyk"
+docker compose exec webserver_app php bin/console app:analysis:results:export:csv --analyzer="psalm,snyk,phan,gpt-3.5-turbo,gpt-3.5-turbo_os,llama-32-8b,llama-32-8b_os,gpt-4o-mini,gpt-4o-mini_os,gpt-4o,gpt-4o_os"  --metrics="truePositives,trueNegatives,falsePositives,falseNegatives,recall,specificity,f1,far,costs,time"
 ```
 
 To export detailed results per issue:
 
 ```bash
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --randomized
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-randomized
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --not-obfuscated
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv
 docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --feedback
 docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-feedback
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --randomized --feedback
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --randomized --no-feedback
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-randomized --feedback
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-randomized --no-feedback
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,llama-3-8b (randomized),llama-3-8b (randomized)_wo_feedback,phan,psalm,snyk"
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o (randomized),gpt-4o (randomized)_wo_feedback,psalm"
-docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="psalm,snyk,phan,gpt-3.5-turbo (randomized),gpt-3.5-turbo (randomized)_wo_feedback,llama-32-8b (randomized),llama-32-8b (randomized)_wo_feedback,gpt-4o-mini (randomized),gpt-4o-mini (randomized)_wo_feedback,gpt-4o (randomized),gpt-4o (randomized)_wo_feedback"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --not-obfuscated --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --not-obfuscated --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --no-feedback
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o,gpt-4o_os,llama-3-8b,llama-3-8b_os,phan,psalm,snyk"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o,gpt-4o_os,psalm"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="gpt-4o,gpt-4o_os,psalm"
+docker compose exec webserver_app php bin/console app:analysis:results:per:issue:export:csv --analyzer="psalm,snyk,phan,gpt-3.5-turbo,gpt-3.5-turbo_os,llama-32-8b,llama-32-8b_os,gpt-4o-mini,gpt-4o-mini_os,gpt-4o,gpt-4o_os"
 ```

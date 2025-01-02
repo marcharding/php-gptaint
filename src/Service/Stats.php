@@ -99,7 +99,7 @@ class Stats
 
             // Initialize without feedback version
             if (!in_array($analyzer, ['psalm', 'snyk', 'phan'])) {
-                $statistics["{$analyzer}_wo_feedback"] = $statistics[$analyzer];
+                $statistics["{$analyzer}_os"] = $statistics[$analyzer];
             }
         }
         return $statistics;
@@ -136,7 +136,7 @@ class Stats
         }
 
         // Process without feedback statistics
-        $woFeedbackKey = "{$analyzer}_wo_feedback";
+        $woFeedbackKey = "{$analyzer}_os";
         if ($lastResult) {
             $statistics[$woFeedbackKey] = $this->getConfusionTable(
                 $statistics[$woFeedbackKey],

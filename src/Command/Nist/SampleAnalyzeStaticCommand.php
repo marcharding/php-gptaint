@@ -109,10 +109,10 @@ class SampleAnalyzeStaticCommand extends Command
             $testCasePhpFiles = glob("{$testCase}/src/*.php");
             $testCasePhpFile = reset($testCasePhpFiles);
 
-            // create file with randomized names for llms analyzation
-            copy($testCasePhpFile, "{$testCasePhpFile}.randomized.php");
-            exec("php vendor/bin/rector process {$testCasePhpFile}.randomized.php 2>&1", $rectorResult);
-            rename("{$testCasePhpFile}.randomized.php", "{$testCasePhpFile}.randomized");
+            // create file with obfuscated names for llms analyzation
+            copy($testCasePhpFile, "{$testCasePhpFile}.obfuscated.php");
+            exec("php vendor/bin/rector process {$testCasePhpFile}.obfuscated.php 2>&1", $rectorResult);
+            rename("{$testCasePhpFile}.obfuscated.php", "{$testCasePhpFile}.obfuscated");
 
             // normalize filepath based on project root
             $pattern = '#^'.preg_quote($this->projectDir, '/').'#';
@@ -207,11 +207,11 @@ EOT;
             $strippedDownTestCase = str_replace('; ', ';'.PHP_EOL, $strippedDownTestCase);
             $code = $strippedDownTestCase;
 
-            $strippedDownTestCase = php_strip_whitespace("{$testCasePhpFile}.randomized");
+            $strippedDownTestCase = php_strip_whitespace("{$testCasePhpFile}.obfuscated");
             $strippedDownTestCase = preg_replace('/<!--(.|\s)*?-->/', '', $strippedDownTestCase);
             $strippedDownTestCase = trim($strippedDownTestCase);
             $strippedDownTestCase = str_replace('; ', ';'.PHP_EOL, $strippedDownTestCase);
-            $codeRandomized = $strippedDownTestCase;
+            $codeObfuscated = $strippedDownTestCase;
 
             $regex = '/<!--\n#(?P<comment>.+?)\n-->/s';
             if (preg_match($regex, file_get_contents($testCasePhpFile), $matches)) {
@@ -227,7 +227,7 @@ EOT;
             $issueEntity->setNote($note);
             $issueEntity->setConfirmedState($state === 'bad' ? Sample::StateBad : Sample::StateGood);
             $issueEntity->setCode($code);
-            $issueEntity->setCodeRandomized($codeRandomized);
+            $issueEntity->setCodeObfuscated($codeObfuscated);
             $issueEntity->setEstimatedTokens(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
             $issueEntity->setEstimatedTokensUnoptimized(count($encoder->encode(iconv('UTF-8', 'UTF-8//IGNORE', $code))));
             $this->entityManager->persist($issueEntity);

@@ -16,7 +16,7 @@ class GptQuery
     protected string $projectDir;
     protected string $openAiToken;
     private string $model;
-    private string $randomize;
+    private string $notObfuscated;
 
     public function __construct(string $projectDir, string $openAiToken, string $defaultModel, string $mistralAiToken, EntityManagerInterface $entityManager)
     {
@@ -25,7 +25,7 @@ class GptQuery
         $this->model = $defaultModel;
         $this->openAiToken = $openAiToken;
         $this->mistralAiToken = $mistralAiToken;
-        $this->randomize = false;
+        $this->notObfuscated = false;
     }
 
     public function setModel($model)
@@ -38,14 +38,14 @@ class GptQuery
         return $this->model;
     }
 
-    public function setRandomize($randomize)
+    public function setNotObfuscated($notObfuscated)
     {
-        $this->randomize = $randomize;
+        $this->notObfuscated = $notObfuscated;
     }
 
-    public function isRandomized()
+    public function isObfuscated()
     {
-        return $this->randomize;
+        return $this->notObfuscated;
     }
 
     public function queryGpt(Sample $issue, $functionCall = true, $temperature = 0.10, $messages = [], $additionalFunctions = [], AnalysisResult $parentGptResult = null): AnalysisResult|array
@@ -75,8 +75,8 @@ class GptQuery
         $provider = new EncoderProvider();
         $encoder = $provider->get('cl100k_base');
 
-        if ($this->isRandomized()) {
-            $code = $issue->getCodeRandomized();
+        if ($this->isObfuscated()) {
+            $code = $issue->getCodeObfuscated();
         } else {
             $code = $issue->getCode();
         }
@@ -163,8 +163,8 @@ class GptQuery
         $model = end($model);
 
         $modeName = $model;
-        if ($this->isRandomized()) {
-            $modeName .= ' (randomized)';
+        if (!$this->isObfuscated()) {
+            $modeName .= ' (not obfuscated)';
         }
 
         $prompt['model'] = $model;

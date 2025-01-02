@@ -22,19 +22,19 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
     private IssueRepository $issueRepository;
     private string $projectDir;
     private array $statsAnalyzers = [
-        'gpt-4o (randomized)',
-        'gpt-4o-mini (randomized)',
-        'llama-3-8b (randomized)',
-        'gpt-3.5-turbo-0125 (randomized)',
+        'gpt-4o',
+        'gpt-4o-mini',
+        'llama-3-8b',
+        'gpt-3.5-turbo-0125',
         'gpt-4o',
         'llama-3-8b',
         'gpt-3.5-turbo-0125',
-        'gpt-4o (randomized)_wo_feedback',
-        'llama-3-8b (randomized)_wo_feedback',
-        'gpt-3.5-turbo-0125 (randomized)_wo_feedback',
-        'gpt-4o_wo_feedback',
-        'llama-3-8b_wo_feedback',
-        'gpt-3.5-turbo-0125_wo_feedback',
+        'gpt-4o_os',
+        'llama-3-8b_os',
+        'gpt-3.5-turbo-0125_os',
+        'gpt-4o_os',
+        'llama-3-8b_os',
+        'gpt-3.5-turbo-0125_os',
     ];
 
     public function __construct(string $projectDir, Stats $statsService, IssueStats $issueStats, IssueRepository $issueRepository, EntityManagerInterface $entityManager)
@@ -49,7 +49,7 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
             ->fetchAllAssociative();
         $modelValues = array_column($modelValues, 'analyzer');
         $modelValuesWoFeedback = array_map(function ($item) {
-            return "{$item}_wo_feedback";
+            return "{$item}_os";
         }, $modelValues);
         $modelValues = array_merge($modelValues, $modelValuesWoFeedback);
         $this->statsAnalyzers = $modelValues;
@@ -59,8 +59,7 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('randomized', null, InputOption::VALUE_NONE, 'Only use the randomized versions')
-            ->addOption('no-randomized', null, InputOption::VALUE_NONE, 'Only use the non-randomized versions')
+            ->addOption('not-obfuscated', null, InputOption::VALUE_NONE, 'Only use the not obfuscated versions')
             ->addOption('feedback', null, InputOption::VALUE_NONE, 'Only use the feedback versions')
             ->addOption('no-feedback', null, InputOption::VALUE_NONE, 'Only use the non-feedback versions')
             ->addOption('analyzer', null, InputOption::VALUE_OPTIONAL, 'Only use these analyzers');
@@ -82,16 +81,15 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
 
     private function filterAnalyzers(InputInterface $input): void
     {
-        $randomized = $input->getOption('randomized');
-        $noRandomized = $input->getOption('no-randomized');
+        $notObfuscated = $input->getOption('not-obfuscated');
         $feedback = $input->getOption('feedback');
         $noFeedback = $input->getOption('no-feedback');
         $onlyKeepTheseAnalyzers = $input->getOption('analyzer');
 
-        if ($randomized) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(randomized)') !== false);
-        } elseif ($noRandomized) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(randomized)') === false);
+        if ($notObfuscated) {
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(not obfuscated)') !== false);
+        } elseif (!$notObfuscated) {
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(not obfuscated)') === false);
         }
 
         if ($feedback) {
@@ -168,8 +166,6 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
             'gpt-4o-mini' => 'GPT 4 mini',
             'time' => 'Zeit',
             'costs' => 'Kosten (in USD)',
-            '(randomized)_wo_feedback' => '*',
-            '(randomized)' => '',
             '"' => '',
         ];
         $csv = file_get_contents($this->projectDir.'/graphs/csv/results_per_issue_analyzer.csv');

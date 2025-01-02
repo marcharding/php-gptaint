@@ -6,7 +6,7 @@ Adjust query for other cases (TN, FP, FN).
 
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
-SET @analyzer = 'gpt-4o (randomized)';
+SET @analyzer = 'gpt-4o';
 SELECT analysis_result.*
 FROM analysis_result
 LEFT JOIN sample ON analysis_result.issue_id = sample.id
@@ -153,8 +153,8 @@ GROUP BY
 
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
-SET @analyzer_one = 'gpt-4o-mini (randomized) / run 1'; 
-SET @analyzer_two = 'gpt-4o-mini (randomized)';
+SET @analyzer_one = 'gpt-4o-mini / run 1'; 
+SET @analyzer_two = 'gpt-4o-mini';
 
 SELECT
     s.name,
@@ -219,16 +219,16 @@ GROUP BY
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
-SET @analyzer_one = 'llama3.3-70b (randomized)';
-SET @analyzer_two = 'llama3.3-70b (randomized) / run 2';
-SET @analyzer_one = 'llama3.1-8b (randomized)';
-SET @analyzer_two = 'llama3.1-8b (randomized) / run 2';
-SET @analyzer_one = 'gpt-4o-mini (randomized)';
-SET @analyzer_two = 'gpt-4o-mini (randomized) / run 2';
-SET @analyzer_one = 'gpt-4o (randomized)';
-SET @analyzer_two = 'gpt-4o (randomized) / run 2';
-SET @analyzer_one = 'gpt-3.5-turbo (randomized)';
-SET @analyzer_two = 'gpt-3.5-turbo (randomized) / run 2';
+SET @analyzer_one = 'llama3.3-70b';
+SET @analyzer_two = 'llama3.3-70b / run 2';
+SET @analyzer_one = 'llama3.1-8b';
+SET @analyzer_two = 'llama3.1-8b / run 2';
+SET @analyzer_one = 'gpt-4o-mini';
+SET @analyzer_two = 'gpt-4o-mini / run 2';
+SET @analyzer_one = 'gpt-4o';
+SET @analyzer_two = 'gpt-4o / run 2';
+SET @analyzer_one = 'gpt-3.5-turbo';
+SET @analyzer_two = 'gpt-3.5-turbo / run 2';
 
 WITH analyzer_results AS (
     SELECT
@@ -311,16 +311,16 @@ GROUP BY
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
-SET @analyzer_one = 'llama3.3-70b (randomized)';
-SET @analyzer_two = 'llama3.3-70b (randomized) / run 2';
-SET @analyzer_one = 'llama3.1-8b (randomized)';
-SET @analyzer_two = 'llama3.1-8b (randomized) / run 2';
-SET @analyzer_one = 'gpt-4o-mini (randomized)';
-SET @analyzer_two = 'gpt-4o-mini (randomized) / run 2';
-SET @analyzer_one = 'gpt-4o (randomized)';
-SET @analyzer_two = 'gpt-4o (randomized) / run 2';
-SET @analyzer_one = 'gpt-3.5-turbo (randomized)';
-SET @analyzer_two = 'gpt-3.5-turbo (randomized) / run 2';
+SET @analyzer_one = 'llama3.3-70b';
+SET @analyzer_two = 'llama3.3-70b / run 2';
+SET @analyzer_one = 'llama3.1-8b';
+SET @analyzer_two = 'llama3.1-8b / run 2';
+SET @analyzer_one = 'gpt-4o-mini';
+SET @analyzer_two = 'gpt-4o-mini / run 2';
+SET @analyzer_one = 'gpt-4o';
+SET @analyzer_two = 'gpt-4o / run 2';
+SET @analyzer_one = 'gpt-3.5-turbo';
+SET @analyzer_two = 'gpt-3.5-turbo / run 2';
          
 WITH analyzer_results AS (
     SELECT
@@ -395,14 +395,14 @@ WHERE
 ```sql
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
-SET @analyzer_one = 'llama-32-8b (randomized) / run 2';
-SET @analyzer_two = 'llama-32-8b (randomized)';
-SET @analyzer_one = 'gpt-4o-mini (randomized) / run 2';
-SET @analyzer_two = 'gpt-4o-mini (randomized)';
-SET @analyzer_one = 'gpt-4o (randomized) / run 2';
-SET @analyzer_two = 'gpt-4o (randomized)';
-SET @analyzer_one = 'gpt-3.5-turbo (randomized) / run 2';
-SET @analyzer_two = 'gpt-3.5-turbo (randomized)';
+SET @analyzer_one = 'llama-32-8b / run 2';
+SET @analyzer_two = 'llama-32-8b';
+SET @analyzer_one = 'gpt-4o-mini / run 2';
+SET @analyzer_two = 'gpt-4o-mini';
+SET @analyzer_one = 'gpt-4o / run 2';
+SET @analyzer_two = 'gpt-4o';
+SET @analyzer_one = 'gpt-3.5-turbo / run 2';
+SET @analyzer_two = 'gpt-3.5-turbo';
          
 WITH analyzer_results AS (
     SELECT

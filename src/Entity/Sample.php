@@ -52,7 +52,7 @@ class Sample
     private ?int $CweId = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $codeRandomized = null;
+    private ?string $codeObfuscated = null;
 
     public function __construct()
     {
@@ -233,14 +233,14 @@ class Sample
         return $this;
     }
 
-    public function getCodeRandomized(): ?string
+    public function getCodeObfuscated(): ?string
     {
-        return $this->codeRandomized;
+        return $this->codeObfuscated;
     }
 
-    public function setCodeRandomized(?string $codeRandomized): static
+    public function setCodeObfuscated(?string $codeObfuscated): static
     {
-        $this->codeRandomized = $codeRandomized;
+        $this->codeObfuscated = $codeObfuscated;
 
         return $this;
     }

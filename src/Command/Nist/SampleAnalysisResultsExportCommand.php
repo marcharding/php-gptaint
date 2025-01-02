@@ -34,7 +34,7 @@ class SampleAnalysisResultsExportCommand extends Command
             ->fetchAllAssociative();
         $modelValues = array_column($modelValues, 'analyzer');
         $modelValuesWoFeedback = array_map(function ($item) {
-            return "{$item}_wo_feedback";
+            return "{$item}_os";
         }, $modelValues);
         $modelValues = array_merge($modelValues, $modelValuesWoFeedback);
         $this->statsAnalyzers = $modelValues;
@@ -44,8 +44,7 @@ class SampleAnalysisResultsExportCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('randomized', null, InputOption::VALUE_NONE, 'Only use the randomized versions')
-            ->addOption('no-randomized', null, InputOption::VALUE_NONE, 'Only use the non-randomized versions')
+            ->addOption('not-obfuscated', null, InputOption::VALUE_NONE, 'Only use the not-obfuscated versions')
             ->addOption('feedback', null, InputOption::VALUE_NONE, 'Only use the feedback versions')
             ->addOption('no-feedback', null, InputOption::VALUE_NONE, 'Only use the non-feedback versions')
             ->addOption('metrics', null, InputOption::VALUE_OPTIONAL, 'Only use these metrics')
@@ -69,22 +68,21 @@ class SampleAnalysisResultsExportCommand extends Command
 
     private function filterAnalyzers(InputInterface $input): void
     {
-        $randomized = $input->getOption('randomized');
-        $noRandomized = $input->getOption('no-randomized');
+        $notObfuscated = $input->getOption('not-obfuscated');
         $feedback = $input->getOption('feedback');
         $noFeedback = $input->getOption('no-feedback');
         $onlyKeepTheseAnalyzers = $input->getOption('analyzer');
 
-        if ($randomized) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(randomized)') !== false);
-        } elseif ($noRandomized) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(randomized)') === false);
+        if ($notObfuscated) {
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(not obfuscated)') !== false);
+        } elseif ($notObfuscated) {
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '(not obfuscated)') === false);
         }
 
         if ($feedback) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, 'wo_feedback') === false);
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '_os') === false);
         } elseif ($noFeedback) {
-            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, 'wo_feedback') !== false);
+            $this->statsAnalyzers = array_filter($this->statsAnalyzers, fn ($analyzer) => strpos($analyzer, '_os') !== false);
         }
 
         $this->statsAnalyzers = array_values($this->statsAnalyzers);
@@ -152,8 +150,6 @@ class SampleAnalysisResultsExportCommand extends Command
             'gpt-4o-mini' => 'GPT 4 mini',
             'time' => 'Zeit',
             'costs' => 'Kosten (in USD)',
-            '(randomized)_wo_feedback' => 'OS',
-            '(randomized)' => '',
             '"' => '',
         ];
         $csv = file_get_contents($this->projectDir.'/graphs/csv/results_total_metrics.csv');

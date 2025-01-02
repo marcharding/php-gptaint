@@ -31,7 +31,7 @@ class SampleAnalyzeLlmCommand extends Command
     private GptQuery $gptQueryService;
     private string $projectDir;
     private string $model;
-    private bool $randomized = false;
+    private bool $notObfuscated = false;
     private Environment $twig;
 
     public function __construct(string $projectDir, EntityManagerInterface $entityManager, GptQuery $gptQuery, Environment $twig)
@@ -48,7 +48,7 @@ class SampleAnalyzeLlmCommand extends Command
         $this
             ->addArgument('issueId', InputArgument::OPTIONAL, 'Issue id which should be analyzed (issue must be complete).')
             ->addOption('model', null, InputOption::VALUE_OPTIONAL, 'Model to use (if none is given the default model from the configuration is used).')
-            ->addOption('randomized', null, InputOption::VALUE_NONE)
+            ->addOption('not-obfuscated', null, InputOption::VALUE_NONE)
             ->addArgument('gptResultId', InputArgument::OPTIONAL, 'Optional existing gpt result id to start the analysis.');
     }
 
@@ -63,11 +63,11 @@ class SampleAnalyzeLlmCommand extends Command
             $this->gptQueryService->setModel($input->getOption('model'));
         }
 
-        if ($input->getOption('randomized')) {
-            $this->randomized = true;
+        if ($input->getOption('not-obfuscated')) {
+            $this->notObfuscated = true;
         }
 
-        $this->gptQueryService->setRandomize($this->randomized);
+        $this->gptQueryService->setObfuscated(!$this->notObfuscated);
 
         if ($gptResultId) {
             $gptResult = $this->entityManager->getRepository(AnalysisResult::class)->find($gptResultId);
@@ -114,8 +114,8 @@ class SampleAnalyzeLlmCommand extends Command
             $io->block('good', 'CONFIRMED STATE', 'fg=green', '# ');
         }
 
-        if ($this->randomized) {
-            $io->block(PHP_EOL.PHP_EOL.$issue->getCodeRandomized().PHP_EOL, 'CODE', 'fg=white', '# ');
+        if (!$this->notObfuscated) {
+            $io->block(PHP_EOL.PHP_EOL.$issue->getCodeObfuscated().PHP_EOL, 'CODE', 'fg=white', '# ');
         } else {
             $io->block(PHP_EOL.PHP_EOL.$issue->getCode().PHP_EOL, 'CODE', 'fg=white', '# ');
         }
@@ -204,8 +204,8 @@ class SampleAnalyzeLlmCommand extends Command
         $sourceFiles = $finder->in($sourceDirectory)->files()->name(['sample.php', 'index.php', 'CWE_*.php'])->getIterator();
         $sourceFiles->rewind();
         $sourceFile = $sourceFiles->current()->getRealPath();
-        if ($this->randomized) {
-            $sourceFile = "{$sourceFile}.randomized";
+        if (!$this->notObfuscated) {
+            $sourceFile = "{$sourceFile}.obfuscated";
         }
         // rename to index.php for easier prompt and more consistent results
         $targetFile = "{$this->projectDir}/sandbox/public/index.php";

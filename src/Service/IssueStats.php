@@ -87,7 +87,7 @@ AND analysis_result.issue_id = {$gptResult->getIssue()->getId()}
 
                 $gptResultWithoutFeedback = $gptResultRepository->findLastGptResultByIssue($issue, $analyzer);
                 if ($gptResultWithoutFeedback) {
-                    $analyzerWithoutFeedback = "{$analyzer}_wo_feedback";
+                    $analyzerWithoutFeedback = "{$analyzer}_os";
                     $analyzerStats = $this->getConfusionTable(
                         $analyzerStats,
                         $issue->getConfirmedState(),
