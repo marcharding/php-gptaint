@@ -21,21 +21,7 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
     private IssueStats $issueStats;
     private IssueRepository $issueRepository;
     private string $projectDir;
-    private array $statsAnalyzers = [
-        'gpt-4o',
-        'gpt-4o-mini',
-        'llama-3-8b',
-        'gpt-3.5-turbo-0125',
-        'gpt-4o',
-        'llama-3-8b',
-        'gpt-3.5-turbo-0125',
-        'gpt-4o_os',
-        'llama-3-8b_os',
-        'gpt-3.5-turbo-0125_os',
-        'gpt-4o_os',
-        'llama-3-8b_os',
-        'gpt-3.5-turbo-0125_os',
-    ];
+    private array $statsAnalyzers = [];
 
     public function __construct(string $projectDir, Stats $statsService, IssueStats $issueStats, IssueRepository $issueRepository, EntityManagerInterface $entityManager)
     {
@@ -45,11 +31,13 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
         $this->issueStats = $issueStats;
         $this->entityManager = $entityManager;
         $modelValues = $this->entityManager->getConnection()
-            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result')
+            ->executeQuery('SELECT DISTINCT analyzer FROM analysis_result WHERE analyzer NOT LIKE "%run 2%"')
             ->fetchAllAssociative();
         $modelValues = array_column($modelValues, 'analyzer');
         $modelValuesWoFeedback = array_map(function ($item) {
-            return "{$item}_os";
+            if(!in_array($item, ['phan', 'psalm', 'snyk'])) {
+                return "{$item}_os";
+            }
         }, $modelValues);
         $modelValues = array_merge($modelValues, $modelValuesWoFeedback);
         $this->statsAnalyzers = $modelValues;
@@ -160,13 +148,15 @@ class SampleAnalysisResultsPerIssuesExportCommand extends Command
             'psalm' => 'Psalm',
             'phan' => 'Phan',
             'snyk' => 'Snyk',
-            'llama-32-8b' => 'Llama 3.2 8b',
+            'llama3.1-8b' => 'Llama 3.1 8b',
+            'llama3.3-70b' => 'Llama 3.3 70b',
             'gpt-3.5-turbo' => 'GPT 3.5 Turbo',
             'gpt-4o' => 'GPT 4o',
             'gpt-4o-mini' => 'GPT 4 mini',
             'time' => 'Zeit',
             'costs' => 'Kosten (in USD)',
             '"' => '',
+            '_os' => ' *',
         ];
         $csv = file_get_contents($this->projectDir.'/graphs/csv/results_per_issue_analyzer.csv');
         $csv = str_replace(array_keys($searchReplace), array_values($searchReplace), $csv);
