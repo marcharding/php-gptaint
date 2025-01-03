@@ -50,6 +50,9 @@ class SampleAnalysisLlmResultsDetailsExportCommand extends Command
 
             foreach ($gptResults as $gptResult) {
                 if ($gptResult->getAnalyzer()) {
+                    if(str_contains($gptResult->getAnalyzer(), 'obfuscated') || str_contains($gptResult->getAnalyzer(), '_os') || str_contains($gptResult->getAnalyzer(), 'run 2')){
+                        continue;
+                    }
                     $groupedGptResults[$gptResult->getAnalyzer()][] = $gptResult;
                 }
             }
