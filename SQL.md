@@ -73,32 +73,38 @@ GROUP BY
 ## Detailed stats per issue (state, try-count)
 
 ```sql
-SELECT 
-    s.name, 
-    ar.analyzer,
-    COUNT(sub_ar.id) AS analysis_count,
-        CASE 
-        WHEN ar.result_state = 1 AND s.confirmed_state = 1 THEN 'TP' 
-        WHEN ar.result_state = 0 AND s.confirmed_state = 0 THEN 'TN' 
-        WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FN' 
-        WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FP' 
-    END AS condition_result 
-FROM 
-    analysis_result ar 
-JOIN 
-    (SELECT MAX(id) AS max_id, issue_id, analyzer 
-     FROM analysis_result 
+SELECT
+    s.name as Sample,
+    ar.analyzer as Analyzer,
+    COUNT(sub_ar.id) AS `Feedback-Loops`,
+    CASE
+        WHEN ar.result_state = 1 AND s.confirmed_state = 1 THEN 'TP'
+        WHEN ar.result_state = 0 AND s.confirmed_state = 0 THEN 'TN'
+        WHEN ar.result_state = 0 AND s.confirmed_state = 1 THEN 'FN'
+        WHEN ar.result_state = 1 AND s.confirmed_state = 0 THEN 'FP'
+        END AS Ergebnis
+INTO OUTFILE '/var/lib/mysql-files/ergebnisse_vollstaendig_20250105.csv'
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+FROM
+    analysis_result ar
+        JOIN
+    (SELECT MAX(id) AS max_id, issue_id, analyzer
+     FROM analysis_result
      GROUP BY issue_id, analyzer
-    ) AS max_results 
-    ON ar.id = max_results.max_id 
-LEFT JOIN 
-    sample s 
-    ON ar.issue_id = s.id 
-LEFT JOIN 
-    analysis_result sub_ar 
-    ON ar.issue_id = sub_ar.issue_id AND ar.analyzer = sub_ar.analyzer 
-GROUP BY 
-    ar.id, s.name, ar.analyzer, s.confirmed_state, ar.result_state;
+    ) AS max_results
+    ON ar.id = max_results.max_id
+        LEFT JOIN
+    sample s
+    ON ar.issue_id = s.id
+        LEFT JOIN
+    analysis_result sub_ar
+    ON ar.issue_id = sub_ar.issue_id AND ar.analyzer = sub_ar.analyzer
+GROUP BY
+    ar.id, s.name, ar.analyzer, s.confirmed_state, ar.result_state
+ORDER BY 
+    ar.analyzer;
 ```
 
 ## Detailed stats per issue (state, try-count with added unique exploit count)
