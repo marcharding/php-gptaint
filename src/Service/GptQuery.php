@@ -159,6 +159,10 @@ class GptQuery
             unset($prompt['function_call']);
         }
 
+        if (str_contains($model, 'o3-mini')) {
+            unset($prompt['temperature']);
+        }
+
         $model = explode('/', $model);
         $model = end($model);
 
