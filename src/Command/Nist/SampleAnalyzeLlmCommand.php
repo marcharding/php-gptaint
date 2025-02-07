@@ -67,7 +67,7 @@ class SampleAnalyzeLlmCommand extends Command
             $this->notObfuscated = true;
         }
 
-        $this->gptQueryService->setObfuscated(!$this->notObfuscated);
+        $this->gptQueryService->isObfuscated(!$this->notObfuscated);
 
         if ($gptResultId) {
             $gptResult = $this->entityManager->getRepository(AnalysisResult::class)->find($gptResultId);
